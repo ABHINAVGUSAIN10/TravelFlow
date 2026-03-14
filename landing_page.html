@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-nav {
+            background: rgba(44, 53, 69, 0.4);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(67, 70, 84, 0.15);
+        }
+        .glass-search {
+            background: rgba(33, 42, 57, 0.5);
+            backdrop-filter: blur(40px);
+            border: 1px solid rgba(67, 70, 84, 0.2);
+        }
+        .hero-gradient {
+            background: linear-gradient(90deg, rgba(10, 20, 34, 0.95) 0%, rgba(10, 20, 34, 0.4) 50%, rgba(10, 20, 34, 0) 100%);
+        }
+        .portrait-card-shadow {
+            box-shadow: 0 40px 60px -15px rgba(59, 111, 232, 0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#2c3545",
+                        "outline-variant": "#434654",
+                        "primary-container": "#3b6fe8",
+                        "surface-container-low": "#121c2a",
+                        "on-secondary": "#3f2e00",
+                        "secondary-fixed-dim": "#fabd00",
+                        "inverse-on-surface": "#273140",
+                        "on-secondary-container": "#6a4e00",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-tint": "#b3c5ff",
+                        "secondary": "#ffdf9e",
+                        "on-primary-fixed-variant": "#003fa4",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-dim": "#0a1422",
+                        "surface-container-high": "#212a39",
+                        "outline": "#8d909f",
+                        "on-background": "#d9e3f7",
+                        "background": "#0a1422",
+                        "on-primary-container": "#ffffff",
+                        "secondary-container": "#fabd00",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#1656cf",
+                        "on-tertiary": "#2f3131",
+                        "surface-container-highest": "#2c3545",
+                        "surface": "#0a1422",
+                        "error": "#ffb4ab",
+                        "primary": "#b3c5ff",
+                        "on-primary-fixed": "#001849",
+                        "on-surface": "#d9e3f7",
+                        "surface-container-lowest": "#050e1c",
+                        "error-container": "#93000a",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "secondary-fixed": "#ffdf9e",
+                        "on-surface-variant": "#c3c6d6",
+                        "on-tertiary-container": "#ffffff",
+                        "on-secondary-fixed-variant": "#5b4300",
+                        "inverse-surface": "#d9e3f7",
+                        "on-secondary-fixed": "#261a00",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "surface-container": "#16202f",
+                        "surface-bright": "#303a49",
+                        "tertiary": "#c6c6c7",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#e2e2e2",
+                        "on-primary": "#002b75",
+                        "tertiary-container": "#757676"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"],
+                        "technical": ["JetBrains Mono"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body">
+
+<!-- Background Image with Color Blend Overlay -->
+<div class="fixed inset-0 z-0 bg-black">
+    <img alt="Colorful Background" class="w-full h-full object-cover opacity-80 mix-blend-luminosity" src="https://postkit.pro/wp-content/uploads/2025/08/ultimate_post_kit_demo_bg.avif"/>
+    <!-- Colorful Gradient Overlay -->
+    <div class="absolute inset-0 bg-gradient-to-br from-[#D30C5C]/60 via-[#0EBCDC]/60 to-[#EAED41]/60 mix-blend-color"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-[#050e1c] via-[#050e1c]/40 to-transparent"></div>
+</div>
+
+<!-- Top Navigation Bar -->
+<nav class="fixed top-6 left-1/2 -translate-x-1/2 w-[92%] z-50 glass-nav rounded-full px-8 py-3 flex items-center justify-between shadow-2xl shadow-[#D30C5C]/10 border border-white/10">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-[#EAED41] drop-shadow-md" style="font-variation-settings: 'FILL' 1;">explore</span>
+        <span class="font-headline font-black text-xl tracking-tight text-white drop-shadow-sm">TravelFlow</span>
+    </div>
+    <div class="hidden md:flex items-center gap-10">
+        <a class="text-sm font-medium text-white/90 hover:text-[#EAED41] transition-colors drop-shadow-sm" href="#">Destinations</a>
+        <a class="text-sm font-medium text-white/90 hover:text-[#EAED41] transition-colors drop-shadow-sm" href="#">Experiences</a>
+        <a class="text-sm font-medium text-white/90 hover:text-[#EAED41] transition-colors drop-shadow-sm" href="#">Journal</a>
+        <a class="text-sm font-medium text-white/90 hover:text-[#EAED41] transition-colors drop-shadow-sm" href="#">About</a>
+    </div>
+    <div class="flex items-center gap-4">
+        <button class="material-symbols-outlined text-white/80 hover:text-[#EAED41] transition-colors">account_circle</button>
+        <button class="material-symbols-outlined text-white/80 hover:text-[#EAED41] transition-colors">menu</button>
+    </div>
+</nav>
+
+<!-- Vertical Dot Navigator -->
+<aside class="fixed left-10 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-6">
+    <div class="w-[2px] h-12 bg-gradient-to-b from-[#D30C5C] to-[#0EBCDC]"></div>
+    <div class="flex flex-col gap-4">
+        <div class="w-2.5 h-2.5 rounded-full bg-[#EAED41] ring-4 ring-[#EAED41]/30 shadow-[0_0_15px_rgba(234,237,65,0.6)] cursor-pointer"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/40 hover:bg-white/80 transition-colors cursor-pointer"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/40 hover:bg-white/80 transition-colors cursor-pointer"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/40 hover:bg-white/80 transition-colors cursor-pointer"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-white/40 hover:bg-white/80 transition-colors cursor-pointer"></div>
+    </div>
+</aside>
+
+<!-- Main Content Area -->
+<main class="relative z-10 grid grid-cols-12 h-screen items-center px-[8%] pt-20">
+    
+    <!-- Narrative Content -->
+    <section class="col-span-12 lg:col-span-7 flex flex-col gap-4">
+        <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-3 bg-white/10 w-max px-4 py-1.5 rounded-full backdrop-blur-md border border-white/20 mb-2">
+            <span class="w-2 h-2 rounded-full bg-[#EAED41] animate-pulse"></span>
+            <span class="font-technical text-white text-xs tracking-widest uppercase font-semibold">Featured Destination</span>
+        </div>
+        
+        <h1 class="font-headline font-black text-[5.5rem] leading-[1.05] tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white/90 to-white/60 drop-shadow-2xl">
+            Explore The Vibrant Unknown
+        </h1>
+        </div>
+        <p class="text-white/80 text-xl leading-relaxed max-w-xl font-medium mt-4 lg:w-[85%]">
+        Immerse yourself in deeply saturated landscapes, rich cultural experiences, and unforgettable journeys tailored just for you.
+        </p>
+        <div class="pt-8 flex items-center gap-6">
+        <button class="bg-[#B4D104] text-[#1F2400] px-10 py-4 rounded-full font-headline font-bold flex items-center gap-3 group hover:bg-[#93AC00] hover:-translate-y-1 transition-all shadow-[0_10px_30px_rgba(180,209,4,0.3)]">
+            Plan Your Trip
+            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </button>
+        <button class="text-white font-headline font-semibold flex items-center gap-2 hover:text-[#0EBCDC] transition-colors">
+            <span class="material-symbols-outlined">explore</span>
+            Discover More
+        </button>
+        </div>
+    </section>
+
+    <!-- Dynamic Shapes / Cards -->
+    <section class="hidden lg:col-span-5 lg:flex justify-end items-center relative h-full pt-12" style="perspective: 1000px;">
+        
+        <!-- Floating Element 1 - Abstract Glass -->
+        <div class="absolute right-32 -translate-y-24 rotate-12 w-48 h-48 rounded-3xl overflow-hidden glass-nav opacity-80 transition-all hover:rotate-0 hover:scale-110 duration-700 shadow-[#0591F9]/20 shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#0591F9]/40 to-white/10 mix-blend-overlay"></div>
+        </div>
+        
+        <!-- Floating Element 2 - Vibrant Blend -->
+        <div class="absolute right-10 translate-y-20 -rotate-6 w-56 h-56 rounded-full bg-gradient-to-tr from-[#D30C5C] to-[#ED5A78] opacity-70 mix-blend-screen transition-all hover:scale-125 duration-1000 blur-sm">
+        </div>
+
+        <!-- Featured Visual Element -->
+        <div class="relative z-20 w-80 h-[28rem] rounded-2xl overflow-hidden shadow-[0_30px_60px_-15px_rgba(211,12,92,0.4)] transition-transform hover:scale-105 hover:-rotate-2 duration-500 border border-white/20">
+        <img alt="Vibrant Travel" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_NwpnE8eFy4_7UlUeSU8yZmj5eLr60HICfq1ZWHOcIXODhiL_6KGtX8u4Bee2fa3swSVyWM08ae456QraOrJv0nssMH-r3i3r_tCNJEl9mIeYamryxDeMKqu2yRJNB3ISLt3rfnWdOkBMA4-Dq-2T-Nl7ZRrC5fZivw2_mkoOYl2odbYX2gVhItaWbaeGLkXwq41zV4u7ENXYXDnaDWyyHY_ckOylGgm-VzYeT0s8QIPJOiNfedUYYGxe0JGx5Imm_VtzaAAL6Uw"/>
+        <!-- Inner Multi-Gradient Burn for Color Blending -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-[#0591F9]/40 via-transparent to-[#EAED41]/30 mix-blend-color-burn"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
+        
+        <div class="absolute bottom-6 left-6 right-6">
+            <div class="flex items-center gap-2 mb-2">
+            <span class="text-[#EAED41] material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+            <span class="font-technical text-sm text-[#EAED41] tracking-widest uppercase">Trending</span>
+            </div>
+            <h3 class="font-headline font-bold text-2xl text-white">Vibrant Escapes</h3>
+            <p class="text-white/80 text-sm mt-2 leading-relaxed">Immerse yourself in deeply saturated landscapes and rich cultural hues.</p>
+        </div>
+        </div>
+    </section>
+</main>
+
+<!-- Floating Info Pill (Reimagined search) -->
+<div class="fixed left-1/2 -translate-x-1/2 z-40 w-[90%] max-w-4xl bottom-28">
+    <div class="bg-white/10 backdrop-blur-2xl rounded-full p-2 flex items-center border border-white/20 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)]">
+        <div class="flex-1 grid grid-cols-4 px-6 gap-4">
+            <div class="flex flex-col">
+                <span class="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Destination</span>
+                <span class="font-headline font-semibold text-sm text-white">Where to?</span>
+            </div>
+            <div class="flex flex-col border-l border-white/10 pl-6">
+                <span class="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Dates</span>
+                <span class="font-headline font-semibold text-sm text-white">Select Dates</span>
+            </div>
+            <div class="flex flex-col border-l border-white/10 pl-6">
+                <span class="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Travelers</span>
+                <span class="font-headline font-semibold text-sm text-white">2 Guests</span>
+            </div>
+            <div class="flex flex-col border-l border-white/10 pl-6">
+                <span class="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Vibe</span>
+                <span class="font-headline font-semibold text-sm text-white">Cultural</span>
+            </div>
+        </div>
+        <button class="bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-headline font-bold px-8 py-4 rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg">
+            Search
+        </button>
+    </div>
+</div>
+
+<!-- Bottom Progress & Global Meta -->
+<footer class="fixed bottom-10 left-[8%] right-[8%] z-40 flex justify-between items-end">
+    <div class="flex flex-col gap-2">
+        <div class="flex items-center gap-4">
+            <span class="font-technical text-xs text-white/50 tracking-tighter uppercase">Destination Slider</span>
+            <span class="font-technical text-xs text-[#0EBCDC]">Kyoto, Japan</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="font-technical text-sm text-white font-bold">01</span>
+            <div class="w-48 h-[2px] bg-white/20 relative overflow-hidden rounded-full">
+                <div class="absolute left-0 top-0 h-full w-1/4 bg-gradient-to-r from-[#0EBCDC] to-[#EAED41]"></div>
+            </div>
+            <span class="font-technical text-sm text-white/40">04</span>
+        </div>
+    </div>
+    <div class="flex flex-col items-end gap-1">
+        <span class="font-technical text-[10px] text-white/50 uppercase tracking-widest">Current Coordinates</span>
+        <span class="font-technical text-sm text-white">35.0116° N, 135.7681° E</span>
+    </div>
+</footer>
+</body></html>
