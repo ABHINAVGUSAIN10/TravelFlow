@@ -58,11 +58,13 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
 
 3. **Configure environment variables:**
 
-   Create a `.env.local` file in the root directory:
-   ```env
-   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/travelflow?retryWrites=true&w=majority
+   Copy the `.env.example` file to `.env.local`:
+   ```bash
+   cp .env.example .env.local
    ```
-   > For local MongoDB, use: `mongodb://localhost:27017/travelflow`
+   Then, update the `MONGODB_URI` in `.env.local` with your database connection string.
+
+   > **Note for Collaborators:** You can either use your own local/Atlas database (recommended) or ask the project owner for access to the shared development database.
 
 4. **Seed the database:**
    ```bash
