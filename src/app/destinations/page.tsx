@@ -2,6 +2,7 @@
 
 import Navigation from "@/components/Navigation";
 import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface Location {
@@ -34,18 +35,36 @@ const CATEGORIES = [
   { label: "Islands", icon: "sailing", color: "#38BDF8" },
 ];
 
+const VIBE_MAP: Record<string, string[]> = {
+  Nature: ["Beaches", "Mountains", "Lakes", "Valleys", "Forests", "Waterfalls", "Islands", "Hill Stations"],
+  Culture: ["Monuments", "Cities"],
+  Adventure: ["Mountains", "Deserts", "Forests"],
+};
+
 export default function Destinations() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const vibeParam = searchParams.get("vibe");
+
   const [locations, setLocations] = useState<Location[]>([]);
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [activeVibe, setActiveVibe] = useState<string | null>(vibeParam);
 
   useEffect(() => {
     async function fetchLocations() {
       setLoading(true);
       try {
         const params = new URLSearchParams();
-        if (activeCategory !== "All") params.set("category", activeCategory);
+
+        // If vibe is active, use mapped categories
+        if (activeVibe && VIBE_MAP[activeVibe]) {
+          params.set("category", VIBE_MAP[activeVibe].join(","));
+        } else if (activeCategory !== "All") {
+          params.set("category", activeCategory);
+        }
+
         if (searchQuery) params.set("search", searchQuery);
 
         const res = await fetch(`/api/locations?${params.toString()}`);
@@ -60,7 +79,7 @@ export default function Destinations() {
 
     const debounce = setTimeout(fetchLocations, 300);
     return () => clearTimeout(debounce);
-  }, [activeCategory, searchQuery]);
+  }, [activeCategory, searchQuery, activeVibe]);
 
   // Group locations by category for "All" view
   const groupedLocations: Record<string, Location[]> = {};
@@ -95,12 +114,35 @@ export default function Destinations() {
             </span>
           </div>
           <h1 className="font-headline font-black text-5xl md:text-6xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-white/90 to-white/60 drop-shadow-xl inline-block">
-            Our Destinations
+            {activeVibe ? `${activeVibe} Destinations` : "Our Destinations"}
           </h1>
           <p className="text-white/60 text-lg mt-4 max-w-2xl font-medium">
-            Discover India&apos;s most breathtaking locations, from pristine beaches to
-            ancient monuments. Filter by category to find your perfect escape.
+            {activeVibe
+              ? `Showing destinations curated for your "${activeVibe}" vibe. Explore and find your perfect escape.`
+              : "Discover India's most breathtaking locations, from pristine beaches to ancient monuments. Filter by category to find your perfect escape."
+            }
           </p>
+
+          {/* Vibe filter pill */}
+          {activeVibe && (
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-[#D30C5C]/20 to-[#DF33DF]/20 border border-[#D30C5C]/30 px-4 py-2 rounded-full backdrop-blur-md">
+                <span className="material-symbols-outlined text-[#DF33DF] text-sm">auto_awesome</span>
+                <span className="font-headline font-semibold text-sm text-white">
+                  {activeVibe} Vibe
+                </span>
+                <button
+                  onClick={() => {
+                    setActiveVibe(null);
+                    router.replace("/destinations");
+                  }}
+                  className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors ml-1"
+                >
+                  <span className="material-symbols-outlined text-white/70 text-xs">close</span>
+                </button>
+              </div>
+            </div>
+          )}
         </header>
 
         {/* Search Bar */}

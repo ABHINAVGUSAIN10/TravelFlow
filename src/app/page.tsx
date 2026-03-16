@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navigation from "@/components/Navigation";
+import DestinationAutocomplete from "@/components/DestinationAutocomplete";
+import CalendarPicker from "@/components/CalendarPicker";
 import { useState, useEffect, useRef } from "react";
 
 // India-centric nature locations
@@ -98,9 +101,17 @@ const LOCATIONS = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const searchSectionRef = useRef<HTMLDivElement>(null);
+
+  // Search bar state
+  const [destinationQuery, setDestinationQuery] = useState("");
+  const [selectedDestination, setSelectedDestination] = useState<{ _id: string; title: string } | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedVibe, setSelectedVibe] = useState("Nature");
 
   // Block user scroll when expanded
   useEffect(() => {
@@ -344,14 +355,16 @@ export default function Home() {
                   }`}
                >
                    <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-4 px-6 py-4 md:py-0 gap-6 md:gap-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Destination</span>
-                        <input type="text" placeholder="Where to?" className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none placeholder-white/50 mt-1" />
-                      </div>
-                      <div className="flex flex-col md:border-l md:border-white/10 md:pl-6">
-                        <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Dates</span>
-                        <input type="text" placeholder="Select Dates" className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none placeholder-white/50 mt-1" />
-                      </div>
+                      <DestinationAutocomplete
+                        value={destinationQuery}
+                        onChange={setDestinationQuery}
+                        onSelect={(s) => setSelectedDestination(s ? { _id: s._id, title: s.title } : null)}
+                      />
+                      <CalendarPicker
+                        startDate={startDate}
+                        endDate={endDate}
+                        onDateChange={(s, e) => { setStartDate(s); setEndDate(e); }}
+                      />
                       <div className="flex flex-col md:border-l md:border-white/10 md:pl-6 pt-4 md:pt-0 border-t border-white/10 md:border-t-0 col-span-2 md:col-span-1">
                         <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Travelers</span>
                         <select defaultValue="2 Guests" className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none mt-1 appearance-none cursor-pointer">
@@ -362,7 +375,11 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col md:border-l md:border-white/10 md:pl-6 pt-4 md:pt-0 border-t border-white/10 md:border-t-0 col-span-2 md:col-span-1">
                         <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Vibe</span>
-                        <select className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none mt-1 appearance-none cursor-pointer">
+                        <select
+                          value={selectedVibe}
+                          onChange={(e) => setSelectedVibe(e.target.value)}
+                          className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none mt-1 appearance-none cursor-pointer"
+                        >
                           <option className="bg-[#050e1c]">Nature</option>
                           <option className="bg-[#050e1c]">Culture</option>
                           <option className="bg-[#050e1c]">Adventure</option>
@@ -379,12 +396,18 @@ export default function Home() {
                        >
                            <span className="material-symbols-outlined text-white">close</span>
                        </button>
-                       <Link 
-                          href="/plan"
-                          className="flex-1 md:flex-none h-12 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-bold px-8 justify-center rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2"
-                       >
-                          Search
-                       </Link>
+                        <button 
+                           onClick={() => {
+                             if (selectedDestination) {
+                               router.push(`/destinations/${selectedDestination._id}`);
+                             } else {
+                               router.push(`/destinations?vibe=${encodeURIComponent(selectedVibe)}`);
+                             }
+                           }}
+                           className="flex-1 md:flex-none h-12 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-bold px-8 justify-center rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2 cursor-pointer"
+                        >
+                           Search
+                        </button>
                    </div>
                </div>
             </div>

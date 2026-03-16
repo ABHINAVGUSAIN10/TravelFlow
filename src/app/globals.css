@@ -82,6 +82,11 @@
   border: 1px solid rgba(67, 70, 84, 0.2);
 }
 
+@utility glass-dropdown {
+  background: rgba(13, 26, 45, 0.95);
+  backdrop-filter: blur(48px);
+}
+
 @utility hero-gradient {
   background: linear-gradient(90deg, rgba(10, 20, 34, 0.95) 0%, rgba(10, 20, 34, 0.4) 50%, rgba(10, 20, 34, 0) 100%);
 }

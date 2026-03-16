@@ -16,7 +16,11 @@ export async function GET(request: NextRequest) {
     const filter: Record<string, any> = {};
 
     if (category && category !== "All") {
-      filter.category = category;
+      if (category.includes(",")) {
+        filter.category = { $in: category.split(",").map((c) => c.trim()) };
+      } else {
+        filter.category = category;
+      }
     }
 
     if (search) {
