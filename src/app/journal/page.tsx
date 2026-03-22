@@ -96,7 +96,7 @@ export default function Journal() {
                     className="object-cover transform group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className={`bg-black/60 backdrop-blur-md px-3 py-1 rounded-full font-technical text-[10px] uppercase tracking-widest font-bold ${post.accent}`}>
+                    <span className={`bg-slate-900/60 dark:bg-black/60 backdrop-blur-md px-3 py-1 rounded-full font-technical text-[10px] uppercase tracking-widest font-bold ${post.accent}`}>
                       {post.category}
                     </span>
                   </div>

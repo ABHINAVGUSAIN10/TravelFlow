@@ -14,6 +14,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'postkit.pro',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.trvl-media.com',
       }
     ],
   },

@@ -42,6 +42,20 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
 
 - [Node.js](https://nodejs.org/) (v20+)
 - A [MongoDB Atlas](https://www.mongodb.com/atlas) account (free tier works) **or** a local MongoDB instance
+- A [SerpAPI](https://serpapi.com/) account for Google Hotels API live data
+
+### Obtaining API Keys
+
+1. **MongoDB Atlas (`MONGODB_URI`)**:
+   - Go to [MongoDB Atlas](https://www.mongodb.com/atlas/database) and create a free cluster.
+   - Go to **Database Access** and create a user with a password.
+   - Go to **Network Access** and allow your IP address (or `0.0.0.0/0` for universal access).
+   - Click **Connect** on your cluster, choose **Connect your application**, and copy the connection string. Replace `<password>` with the password you created.
+
+2. **SerpAPI (`SERPAPI_KEY`)**:
+   - Head over to [SerpAPI](https://serpapi.com/) and register for a free account.
+   - Once logged in, navigate to your **Dashboard**.
+   - Copy your private API Key from the "Your Private API Key" section.
 
 ### Installation
 
@@ -62,7 +76,11 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
    ```bash
    cp .env.example .env.local
    ```
-   Then, update the `MONGODB_URI` in `.env.local` with your database connection string.
+   Then, update `.env.local` with your database and API keys:
+   ```env
+   MONGODB_URI=your_mongodb_connection_string
+   SERPAPI_KEY=your_serpapi_private_key
+   ```
 
    > **Note for Collaborators:** You can either use your own local/Atlas database (recommended) or ask the project owner for access to the shared development database.
 

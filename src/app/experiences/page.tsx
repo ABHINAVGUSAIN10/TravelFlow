@@ -56,7 +56,7 @@ export default function Experiences() {
                     <span className={`font-technical text-[10px] uppercase font-bold tracking-widest text-[#1F2400] px-3 py-1.5 rounded-full ${exp.accent}`}>
                       {exp.category}
                     </span>
-                    <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
+                    <div className="flex items-center gap-1 bg-slate-900/40 dark:bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10">
                       <span className="material-symbols-outlined text-[#EAED41] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
                       <span className="font-technical text-sm text-white font-bold">{exp.rating}</span>
                     </div>

@@ -305,7 +305,7 @@ export default function DestinationDetail() {
                 <h3 className="font-headline font-bold text-xl mb-2">Ready to explore?</h3>
                 <p className="text-white/50 text-sm mb-5">Start planning your trip to {location.title} with our itinerary planner.</p>
                 <Link
-                  href={`/plan?dest=${location.title}`}
+                  href={`/plan?dest=${encodeURIComponent(location.title)}&tab=hotels`}
                   className="w-full block bg-white text-[#050e1c] py-4 rounded-xl font-bold font-headline text-center hover:bg-gray-200 transition-colors shadow-lg"
                 >
                   Plan Your Itinerary

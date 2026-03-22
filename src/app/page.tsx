@@ -241,7 +241,7 @@ export default function Home() {
               
               <div className="pt-8 flex items-center gap-6">
                 <Link 
-                  href="/plan"
+                  href={`/plan?dest=${encodeURIComponent(activeLoc.title)}`}
                   style={{ backgroundColor: activeLoc.accentColor }}
                   className="text-[#050e1c] px-10 py-4 rounded-full font-headline font-bold flex items-center gap-3 group hover:opacity-90 hover:-translate-y-1 transition-all shadow-xl"
                 >
@@ -399,9 +399,9 @@ export default function Home() {
                         <button 
                            onClick={() => {
                              if (selectedDestination) {
-                               router.push(`/destinations/${selectedDestination._id}`);
+                               router.push(`/plan?dest=${encodeURIComponent(selectedDestination.title)}&tab=hotels`);
                              } else {
-                               router.push(`/destinations?vibe=${encodeURIComponent(selectedVibe)}`);
+                               router.push(`/plan?vibe=${encodeURIComponent(selectedVibe)}&tab=hotels`);
                              }
                            }}
                            className="flex-1 md:flex-none h-12 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-bold px-8 justify-center rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2 cursor-pointer"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import Sidebar from "./_components/Sidebar";
@@ -18,10 +18,21 @@ export default function PlanTrip() {
   );
 }
 
+
 function PlanTripContent() {
-  const [activeTab, setActiveTab] = useState<'timeline' | 'hotels' | 'vehicles' | 'guides'>('timeline');
   const searchParams = useSearchParams();
   const destParam = searchParams.get("dest");
+  const tabParam = searchParams.get("tab") as 'timeline' | 'hotels' | 'vehicles' | 'guides' | null;
+  const [activeTab, setActiveTab] = useState<'timeline' | 'hotels' | 'vehicles' | 'guides'>(
+    tabParam || 'timeline'
+  );
+  const [budgetSpent, setBudgetSpent] = useState(0);
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   
   // Dynamic Title Logic
   const destinationTitle = destParam ? destParam : "Manali";
@@ -39,7 +50,7 @@ function PlanTripContent() {
           <span className="text-sm font-bold text-[#3B6FE8] border-b-2 border-[#3B6FE8] pb-1 cursor-default">Plan Itinerary</span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button className="p-2 hover:bg-slate-900/10 dark:hover:bg-white/10 rounded-full transition-colors">
             <span className="material-symbols-outlined text-white">explore</span>
           </button>
           <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 border border-white/20">
@@ -62,15 +73,15 @@ function PlanTripContent() {
                 <p className="text-white/60 text-lg font-medium">Oct 12 — Oct 18, 2026 • 6 Days</p>
               </div>
               <div className="text-right">
-                <span className="font-technical text-[10px] text-white/50 block uppercase tracking-widest mb-1">Estimated Budget</span>
-                <p className="text-3xl font-headline font-bold text-[#EAED41]">₹12,500</p>
+                <span className="font-technical text-[10px] text-white/50 block uppercase tracking-widest mb-1">Booked Amount</span>
+                <p className="text-3xl font-headline font-bold text-[#EAED41]">₹{budgetSpent > 0 ? budgetSpent.toLocaleString('en-IN') : "0"}</p>
               </div>
             </div>
           </header>
 
           {/* DYNAMIC CONTENT SWITCHER */}
           {activeTab === 'timeline' && <TimelineTab />}
-          {activeTab === 'hotels' && <HotelsTab />}
+          {activeTab === 'hotels' && <HotelsTab destination={destinationTitle} onBookItem={(price: number) => setBudgetSpent(p => p + price)} />}
           {activeTab === 'vehicles' && <VehiclesTab />}
           {activeTab === 'guides' && <GuidesTab />}
         </section>

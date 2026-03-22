@@ -387,7 +387,7 @@ function LocationCard({
       </div>
 
       {/* Hover arrow indicator */}
-      <div className="absolute right-5 bottom-5 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 bg-black/20 backdrop-blur-sm">
+      <div className="absolute right-5 bottom-5 w-10 h-10 rounded-full border border-white/20 flex items-center justify-center translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 bg-slate-900/20 dark:bg-black/20 backdrop-blur-sm">
         <span className="material-symbols-outlined text-white text-sm">
           north_east
         </span>
@@ -455,7 +455,7 @@ function LocationCardGrid({
       </div>
 
       {/* Hover arrow indicator */}
-      <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 bg-black/20 backdrop-blur-sm">
+      <div className="absolute right-8 bottom-8 w-12 h-12 rounded-full border border-white/20 flex items-center justify-center translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500 bg-slate-900/20 dark:bg-black/20 backdrop-blur-sm">
         <span className="material-symbols-outlined text-white">north_east</span>
       </div>
     </Link>
