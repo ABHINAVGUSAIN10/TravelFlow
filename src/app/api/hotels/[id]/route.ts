@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 const { getJson } = require("serpapi");
 
-const SERPAPI_KEY = "92186c701692fc1bf9ec9520b96e509e0aa08bd9ae5712c523908abdbf5f3c97";
+const SERPAPI_KEY = process.env.SERPAPI_KEY;
 
 export async function GET(
   request: NextRequest,
