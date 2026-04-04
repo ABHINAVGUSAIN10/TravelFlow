@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import Providers from "@/components/Providers";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-plus-jakarta-sans", // Tailwind v4 maps based on usage but this ensures injection
+  variable: "--font-plus-jakarta-sans",
 });
 
 const inter = Inter({
@@ -39,7 +40,9 @@ export default function RootLayout({
         />
       </head>
       <body className={`${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased`}>
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
