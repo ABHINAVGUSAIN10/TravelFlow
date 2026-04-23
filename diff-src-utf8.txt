@@ -1,0 +1,3726 @@
+﻿diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/[...nextauth]/route.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/[...nextauth]/route.ts"
+deleted file mode 100644
+index 9b3a8f7..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/[...nextauth]/route.ts"	
++++ /dev/null
+@@ -1,6 +0,0 @@
+-import NextAuth from "next-auth";
+-import { authOptions } from "@/lib/authOptions";
+-
+-const handler = NextAuth(authOptions);
+-
+-export { handler as GET, handler as POST };
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/setup-username/route.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/setup-username/route.ts"
+deleted file mode 100644
+index f4b1fa1..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/setup-username/route.ts"	
++++ /dev/null
+@@ -1,40 +0,0 @@
+-import { NextRequest, NextResponse } from "next/server";
+-import { getServerSession } from "next-auth/next";
+-import { authOptions } from "@/lib/authOptions";
+-import dbConnect from "@/lib/mongodb";
+-import User from "@/models/User";
+-
+-export async function POST(req: NextRequest) {
+-  try {
+-    const session = await getServerSession(authOptions);
+-
+-    if (!session || !session.user?.email) {
+-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+-    }
+-
+-    const { username } = await req.json();
+-
+-    if (!username || username.length < 3) {
+-      return NextResponse.json({ error: "Username too short" }, { status: 400 });
+-    }
+-
+-    await dbConnect();
+-
+-    // Check if username is already taken
+-    const existingUser = await User.findOne({ username });
+-    if (existingUser) {
+-      return NextResponse.json({ error: "Username already taken" }, { status: 400 });
+-    }
+-
+-    // Update the user
+-    await User.findOneAndUpdate(
+-      { email: session.user.email },
+-      { username: username }
+-    );
+-
+-    return NextResponse.json({ success: true });
+-  } catch (error) {
+-    console.error("Setup username error:", error);
+-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+-  }
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/signup/route.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/signup/route.ts"
+deleted file mode 100644
+index a8fc6a5..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/auth/signup/route.ts"	
++++ /dev/null
+@@ -1,54 +0,0 @@
+-import { NextRequest, NextResponse } from "next/server";
+-import dbConnect from "@/lib/mongodb";
+-import User from "@/models/User";
+-import bcrypt from "bcryptjs";
+-
+-export async function POST(req: NextRequest) {
+-  try {
+-    const { name, email, username, password } = await req.json();
+-
+-    if (!email || !password || !username) {
+-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+-    }
+-
+-    if (password.length < 6) {
+-      return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+-    }
+-
+-    await dbConnect();
+-
+-    // Check if email already exists
+-    const existingEmail = await User.findOne({ email });
+-    if (existingEmail) {
+-      return NextResponse.json({ error: "Email already registered" }, { status: 400 });
+-    }
+-
+-    // Check if username already exists
+-    const existingUsername = await User.findOne({ username });
+-    if (existingUsername) {
+-      return NextResponse.json({ error: "Username already taken" }, { status: 400 });
+-    }
+-
+-    // Hash password
+-    const hashedPassword = await bcrypt.hash(password, 12);
+-
+-    // Create user
+-    const newUser = await User.create({
+-      name,
+-      email,
+-      username,
+-      password: hashedPassword,
+-      role: "user",
+-    });
+-
+-    return NextResponse.json({ 
+-      success: true, 
+-      message: "User created successfully",
+-      user: { id: newUser._id, email: newUser.email, username: newUser.username }
+-    }, { status: 201 });
+-
+-  } catch (error: any) {
+-    console.error("Signup error:", error);
+-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+-  }
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/hotels/search/route.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/hotels/search/route.ts"
+index e03ba8a..c28612f 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/hotels/search/route.ts"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/hotels/search/route.ts"	
+@@ -118,7 +118,72 @@ export async function GET(request: NextRequest) {
+       nextPageToken: searchRes?.serpapi_pagination?.next_page_token || null
+     });
+   } catch (err: any) {
+-    console.error("Hotel search error:", err);
+-    return NextResponse.json({ error: err.message }, { status: 500 });
++    console.warn("Hotel search API failed, falling back to mock data:", err.message);
++    
++    // Fallback if API fails
++    const mockHotels = [
++      {
++        id: "mock-1",
++        name: `The Grand Summit ${dest}`,
++        image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80",
++        rating: 9.4,
++        totalReviews: 245,
++        reviewSummary: "Exceptional",
++        price: "Γé╣8,450",
++        priceRaw: 8450,
++        strikethrough: "Γé╣12,000",
++        address: `${dest} Central`,
++        starRating: 5,
++        badge: "Top Rated",
++      },
++      {
++        id: "mock-2",
++        name: `Heritage Resort ${dest}`,
++        image: "https://images.unsplash.com/photo-1542314831-c6a4d14b837c?auto=format&fit=crop&w=800&q=80",
++        rating: 8.8,
++        totalReviews: 120,
++        reviewSummary: "Excellent",
++        price: "Γé╣5,200",
++        priceRaw: 5200,
++        strikethrough: "Γé╣7,500",
++        address: `Near ${dest} Valley`,
++        starRating: 4,
++        badge: "Great Value",
++      },
++      {
++        id: "mock-3",
++        name: `Alpine Retreat ${dest}`,
++        image: "https://images.unsplash.com/photo-1551882547-ff40c0d1398c?auto=format&fit=crop&w=800&q=80",
++        rating: 8.2,
++        totalReviews: 85,
++        reviewSummary: "Very Good",
++        price: "Γé╣3,800",
++        priceRaw: 3800,
++        strikethrough: "",
++        address: `Downtown ${dest}`,
++        starRating: 3,
++        badge: "",
++      },
++      {
++        id: "mock-4",
++        name: `${dest} Backpackers Hostel`,
++        image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80",
++        rating: 7.5,
++        totalReviews: 412,
++        reviewSummary: "Good",
++        price: "Γé╣1,200",
++        priceRaw: 1200,
++        strikethrough: "Γé╣1,800",
++        address: `${dest} Market`,
++        starRating: 2,
++        badge: "Popular",
++      }
++    ];
++
++    return NextResponse.json({ 
++      hotels: mockHotels, 
++      regionId: `mock-${dest}`,
++      nextPageToken: null
++    });
+   }
+ }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/[id]/route.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/[id]/route.ts"
+index c4730be..c643459 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/[id]/route.ts"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/[id]/route.ts"	
+@@ -1,6 +1,9 @@
+ import { NextResponse } from "next/server";
+ import dbConnect from "@/lib/mongodb";
+ import Location from "@/models/Location";
++import { locations as FALLBACK_LOCATIONS } from "../../../../../scripts/seed";
++
++export const dynamic = "force-dynamic";
+ 
+ export async function GET(
+   _request: Request,
+@@ -17,7 +20,25 @@ export async function GET(
+ 
+     return NextResponse.json({ location });
+   } catch (error) {
+-    console.error("Error fetching location:", error);
+-    return NextResponse.json({ error: "Failed to fetch location" }, { status: 500 });
++    console.warn(`MongoDB failed while fetching location. Falling back to mock data...`);
++    const { id } = await params;
++    
++    // Fallback logic
++    const fallbackLocation = FALLBACK_LOCATIONS.find((loc: any) => 
++      String(loc.title) === id || 
++      String(loc.id) === id || 
++      loc.title.toLowerCase().replace(/\s+/g, '-') === id.toLowerCase()
++    );
++
++    if (fallbackLocation) {
++      return NextResponse.json({ 
++        location: {
++          ...fallbackLocation,
++          _id: String(fallbackLocation.title)
++        } 
++      });
++    }
++
++    return NextResponse.json({ error: "Location not found in fallback data either" }, { status: 404 });
+   }
+ }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/autocomplete/route.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/autocomplete/route.ts"
+index 5588eb7..8b2918b 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/autocomplete/route.ts"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/autocomplete/route.ts"	
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import dbConnect from "@/lib/mongodb";
+ import Location from "@/models/Location";
++import { locations as FALLBACK_LOCATIONS } from "../../../../../scripts/seed";
+ 
+ export async function GET(request: NextRequest) {
+   try {
+@@ -26,8 +27,32 @@ export async function GET(request: NextRequest) {
+       .lean();
+ 
+     return NextResponse.json({ suggestions });
++    return NextResponse.json({ suggestions });
+   } catch (error) {
+-    console.error("Autocomplete error:", error);
+-    return NextResponse.json({ suggestions: [] }, { status: 500 });
++    console.warn("MongoDB connection failed or query error. Falling back to mock data.", error);
++    
++    // Fallback logic
++    const { searchParams } = new URL(request.url);
++    const q = (searchParams.get("q") || "").toLowerCase();
++    
++    if (!q) {
++      return NextResponse.json({ suggestions: [] });
++    }
++    
++    const fallbackSuggestions = FALLBACK_LOCATIONS.filter((loc: any) => 
++      loc.title.toLowerCase().includes(q) || 
++      loc.subtitle.toLowerCase().includes(q) || 
++      loc.state.toLowerCase().includes(q)
++    ).slice(0, 6).map((loc: any) => ({
++      _id: String(loc.title),
++      title: loc.title,
++      subtitle: loc.subtitle,
++      state: loc.state,
++      category: loc.category,
++      cardImage: loc.cardImage,
++      accentColor: loc.accentColor
++    }));
++    
++    return NextResponse.json({ suggestions: fallbackSuggestions });
+   }
+ }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/route.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/route.ts"
+index 5e494be..3b60264 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/locations/route.ts"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/locations/route.ts"	
+@@ -1,6 +1,7 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import dbConnect from "@/lib/mongodb";
+ import Location from "@/models/Location";
++import { locations as FALLBACK_LOCATIONS } from "../../../../scripts/seed";
+ 
+ export async function GET(request: NextRequest) {
+   try {
+@@ -35,11 +36,36 @@ export async function GET(request: NextRequest) {
+     const locations = await Location.find(filter).limit(limit).sort({ title: 1 });
+ 
+     return NextResponse.json({ locations, total: locations.length });
++    return NextResponse.json({ locations, total: locations.length });
+   } catch (error) {
+-    console.error("Error fetching locations:", error);
+-    return NextResponse.json(
+-      { error: "Failed to fetch locations" },
+-      { status: 500 }
+-    );
++    console.warn("MongoDB connection failed or query error. Falling back to mock data.");
++    
++    const { searchParams } = new URL(request.url);
++    const category = searchParams.get("category");
++    const search = (searchParams.get("search") || "").toLowerCase();
++    const limit = parseInt(searchParams.get("limit") || "50");
++
++    let fallbackLocations = [...FALLBACK_LOCATIONS];
++
++    if (category && category !== "All") {
++      const cats = category.split(",").map(c => c.trim());
++      fallbackLocations = fallbackLocations.filter(l => cats.includes(l.category));
++    }
++
++    if (search) {
++      fallbackLocations = fallbackLocations.filter((l: any) => 
++        l.title.toLowerCase().includes(search) || 
++        l.subtitle.toLowerCase().includes(search) || 
++        l.state.toLowerCase().includes(search) || 
++        l.description.toLowerCase().includes(search)
++      );
++    }
++
++    const locations = fallbackLocations.slice(0, limit).map((l: any) => ({
++      ...l,
++      _id: String(l.title) // Mock the MongoDB _id field format
++    }));
++
++    return NextResponse.json({ locations, total: locations.length });
+   }
+ }
+diff --git "a/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/routes/route.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/routes/route.ts"
+new file mode 100644
+index 0000000..839882d
+--- /dev/null
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/api/routes/route.ts"	
+@@ -0,0 +1,370 @@
++import { NextRequest, NextResponse } from "next/server";
++import { geocodePlace, GeoPoint } from "@/lib/geocode";
++
++export const dynamic = "force-dynamic";
++
++export interface JourneyLeg {
++  mode: "flight" | "train" | "taxi" | "bus" | "transit";
++  origin: string;
++  destination: string;
++  duration: string;
++  durationMins: number;
++  price: string;
++  distanceKm: number;
++  path: [number, number][];
++}
++
++// ΓöÇΓöÇ Utilities ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
++  const R = 6371;
++  const dLat = ((lat2 - lat1) * Math.PI) / 180;
++  const dLon = ((lon2 - lon1) * Math.PI) / 180;
++  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
++  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
++}
++function formatDuration(mins: number) {
++  const h = Math.floor(mins/60), m = Math.floor(mins%60);
++  return h === 0 ? `${m}m` : m === 0 ? `${h}h` : `${h}h ${m}m`;
++}
++
++// Race a promise against a deadline ΓÇö returns `fallback` if deadline fires first
++function withDeadline<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
++  return new Promise(resolve => {
++    const t = setTimeout(() => resolve(fallback), ms);
++    promise.then(v => { clearTimeout(t); resolve(v); }).catch(() => { clearTimeout(t); resolve(fallback); });
++  });
++}
++
++// ΓöÇΓöÇ Overpass API helpers (free OSM data, no API key) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++interface Place { name: string; lat: number; lng: number; }
++
++async function overpassNearest(query: string): Promise<Place | null> {
++  try {
++    const res = await fetch(
++      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`,
++      { headers: { "User-Agent": "TravelFlow/1.0 (college project)" }, signal: AbortSignal.timeout(13000) }
++    );
++    if (!res.ok) return null;
++    const data = await res.json();
++    if (!data.elements?.length) return null;
++
++    let best: Place | null = null, minD = Infinity;
++    for (const el of data.elements) {
++      const lat = el.lat ?? el.center?.lat, lng = el.lon ?? el.center?.lon;
++      if (!lat || !lng) continue;
++      // Use the lat/lng embedded in the query string to compute distance
++      // (we'll sort by order returned since Overpass returns closest-ish first)
++      if (!best || minD > 0) { best = { name: el.tags?.name ?? "Unknown", lat, lng }; minD = 0; break; }
++    }
++    return best;
++  } catch { return null; }
++}
++
++// Find closest airport with a REAL name within radiusKm.
++// Find closest airport within radiusKm
++async function findAirport(lat: number, lng: number, radiusKm = 150): Promise<Place | null> {
++  const dLat = radiusKm / 111.32;
++  const dLng = radiusKm / (111.32 * Math.cos(lat * (Math.PI / 180)));
++  const bbox = `${(lat - dLat).toFixed(4)},${(lng - dLng).toFixed(4)},${(lat + dLat).toFixed(4)},${(lng + dLng).toFixed(4)}`;
++
++  const q = `[out:json][timeout:5];`
++    + `(node["aeroway"="aerodrome"](${bbox});`
++    + ` way["aeroway"="aerodrome"](${bbox});`
++    + `);out center 5;`;
++  try {
++    const res = await fetch(
++      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
++      { headers: { "User-Agent": "TravelFlow/1.0 (college project)" }, signal: AbortSignal.timeout(13000) }
++    );
++    if (!res.ok) return null;
++    const data = await res.json();
++    if (!data.elements?.length) return null;
++
++    // Pick element with shortest distance from (lat,lng)
++    let best: Place | null = null, minD = Infinity;
++    for (const el of data.elements) {
++      const elLat = el.lat ?? el.center?.lat, elLng = el.lon ?? el.center?.lon;
++      if (!elLat || !elLng) continue;
++      const d = getDistance(lat, lng, elLat, elLng);
++      if (d < minD) { minD = d; best = { name: el.tags?.name ?? "Airport", lat: elLat, lng: elLng }; }
++    }
++    return best;
++  } catch { return null; }
++}
++
++// Find closest railway station within radiusKm (50 km covers most Indian city centres).
++async function findStation(lat: number, lng: number, radiusKm = 50): Promise<Place | null> {
++  const dLat = radiusKm / 111.32;
++  const dLng = radiusKm / (111.32 * Math.cos(lat * (Math.PI / 180)));
++  const bbox = `${(lat - dLat).toFixed(4)},${(lng - dLng).toFixed(4)},${(lat + dLat).toFixed(4)},${(lng + dLng).toFixed(4)}`;
++
++  const q = `[out:json][timeout:5];`
++    + `(node["railway"="station"](${bbox});`
++    + ` way["railway"="station"](${bbox});`
++    + `);out center 5;`;
++  try {
++    const res = await fetch(
++      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
++      { headers: { "User-Agent": "TravelFlow/1.0 (college project)" }, signal: AbortSignal.timeout(10000) }
++    );
++    if (!res.ok) return null;
++    const data = await res.json();
++    if (!data.elements?.length) return null;
++
++    let best: Place | null = null, minD = Infinity;
++    for (const el of data.elements) {
++      const elLat = el.lat ?? el.center?.lat, elLng = el.lon ?? el.center?.lon;
++      if (!elLat || !elLng) continue;
++      const d = getDistance(lat, lng, elLat, elLng);
++      if (d < minD) { minD = d; best = { name: el.tags?.name ?? "Railway Station", lat: elLat, lng: elLng }; }
++    }
++    return best;
++  } catch { return null; }
++}
++
++// Find closest bus station within radiusKm
++async function findBusStation(lat: number, lng: number, radiusKm = 15): Promise<Place | null> {
++  const dLat = radiusKm / 111.32;
++  const dLng = radiusKm / (111.32 * Math.cos(lat * (Math.PI / 180)));
++  const bbox = `${(lat - dLat).toFixed(4)},${(lng - dLng).toFixed(4)},${(lat + dLat).toFixed(4)},${(lng + dLng).toFixed(4)}`;
++
++  const q = `[out:json][timeout:5];`
++    + `(node["amenity"="bus_station"](${bbox});`
++    + ` way["amenity"="bus_station"](${bbox});`
++    + `);out center 5;`;
++  try {
++    const res = await fetch(
++      `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`,
++      { headers: { "User-Agent": "TravelFlow/1.0 (college project)" }, signal: AbortSignal.timeout(10000) }
++    );
++    if (!res.ok) return null;
++    const data = await res.json();
++    if (!data.elements?.length) return null;
++
++    let best: Place | null = null, minD = Infinity;
++    for (const el of data.elements) {
++      const elLat = el.lat ?? el.center?.lat, elLng = el.lon ?? el.center?.lon;
++      if (!elLat || !elLng) continue;
++      const d = getDistance(lat, lng, elLat, elLng);
++      if (d < minD) { minD = d; best = { name: el.tags?.name ?? "Bus Station", lat: elLat, lng: elLng }; }
++    }
++    return best;
++  } catch { return null; }
++}
++
++// ΓöÇΓöÇ OSRM road path (free, no key) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++async function roadPath(
++  fromLat: number, fromLng: number,
++  toLat: number, toLng: number
++): Promise<{ path: [number,number][]; km: number; mins: number } | null> {
++  try {
++    const url = `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`;
++    const res = await fetch(url, { headers: { "User-Agent": "TravelFlow/1.0" }, signal: AbortSignal.timeout(9000) });
++    if (!res.ok) return null;
++    const data = await res.json();
++    if (data.code !== "Ok" || !data.routes?.[0]) return null;
++    const rt = data.routes[0];
++    return {
++      path: rt.geometry.coordinates.map(([lg, la]: [number,number]) => [la, lg] as [number,number]),
++      km: rt.distance / 1000,
++      mins: rt.duration / 60,
++    };
++  } catch { return null; }
++}
++
++// ΓöÇΓöÇ Great-circle arc for flights ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function flightArc(lat1: number, lon1: number, lat2: number, lon2: number, n=80): [number,number][] {
++  const rad = (d: number) => d*Math.PI/180, deg = (r: number) => r*180/Math.PI;
++  const ╧å1=rad(lat1), ╬╗1=rad(lon1), ╧å2=rad(lat2), ╬╗2=rad(lon2);
++  const d = 2*Math.asin(Math.sqrt(Math.sin((╧å2-╧å1)/2)**2+Math.cos(╧å1)*Math.cos(╧å2)*Math.sin((╬╗2-╬╗1)/2)**2));
++  if (d < 0.0001) return [[lat1,lon1],[lat2,lon2]];
++  return Array.from({length:n+1}, (_,i) => {
++    const t=i/n, A=Math.sin((1-t)*d)/Math.sin(d), B=Math.sin(t*d)/Math.sin(d);
++    const x=A*Math.cos(╧å1)*Math.cos(╬╗1)+B*Math.cos(╧å2)*Math.cos(╬╗2);
++    const y=A*Math.cos(╧å1)*Math.sin(╬╗1)+B*Math.cos(╧å2)*Math.sin(╬╗2);
++    const z=A*Math.sin(╧å1)+B*Math.sin(╧å2);
++    return [deg(Math.atan2(z,Math.sqrt(x*x+y*y))), deg(Math.atan2(y,x))] as [number,number];
++  });
++}
++
++// ΓöÇΓöÇ Straight-line list (fallback) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function straightLine(p1: GeoPoint, p2: GeoPoint): [number,number][] {
++  return [[p1.lat,p1.lng],[p2.lat,p2.lng]];
++}
++
++// ΓöÇΓöÇ Route builders ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++async function buildRoad(src: GeoPoint, dst: GeoPoint, srcL: string, dstL: string, crowKm: number): Promise<JourneyLeg[]> {
++  const osrm = await withDeadline(roadPath(src.lat,src.lng,dst.lat,dst.lng), 9000, null);
++  const path = osrm?.path ?? straightLine(src,dst);
++  const km   = osrm ? Math.round(osrm.km)    : Math.round(crowKm*1.3);
++  const mins = osrm ? osrm.mins              : (crowKm/50)*60;
++  const mode: "taxi"|"bus" = crowKm<200 ? "taxi" : "bus";
++  return [{ mode, origin:srcL, destination:dstL, duration:formatDuration(mins), durationMins:mins,
++    price:`Γé╣${Math.round(km*(mode==="taxi"?16:9))}`, distanceKm:km, path }];
++}
++
++async function buildFlight(
++  src: GeoPoint, dst: GeoPoint,
++  srcApt: Place, dstApt: Place,
++  srcL: string, dstL: string
++): Promise<JourneyLeg[]> {
++  const [t1, t3] = await Promise.all([
++    withDeadline(roadPath(src.lat,src.lng,srcApt.lat,srcApt.lng), 8000, null),
++    withDeadline(roadPath(dstApt.lat,dstApt.lng,dst.lat,dst.lng), 8000, null),
++  ]);
++  const k1 = t1 ? Math.round(t1.km) : Math.round(getDistance(src.lat,src.lng,srcApt.lat,srcApt.lng));
++  const m1 = t1 ? t1.mins : (k1/35)*60;
++  const k3 = t3 ? Math.round(t3.km) : Math.round(getDistance(dstApt.lat,dstApt.lng,dst.lat,dst.lng));
++  const m3 = t3 ? t3.mins : (k3/35)*60;
++  const fkm = Math.round(getDistance(srcApt.lat,srcApt.lng,dstApt.lat,dstApt.lng));
++  const fmin = (fkm/700)*60+90;
++  return [
++    { mode:"taxi", origin:srcL,       destination:srcApt.name, duration:formatDuration(m1), durationMins:m1, price:`Γé╣${Math.round(k1*20)}`,             distanceKm:k1,  path:t1?.path??[[src.lat,src.lng],[srcApt.lat,srcApt.lng]] },
++    { mode:"flight",origin:srcApt.name,destination:dstApt.name,duration:formatDuration(fmin),durationMins:fmin,price:`Γé╣${Math.round(fkm*4+2500)}`,        distanceKm:fkm, path:flightArc(srcApt.lat,srcApt.lng,dstApt.lat,dstApt.lng,80) },
++    { mode:"taxi", origin:dstApt.name, destination:dstL,       duration:formatDuration(m3), durationMins:m3, price:`Γé╣${Math.round(k3*20)}`,             distanceKm:k3,  path:t3?.path??[[dstApt.lat,dstApt.lng],[dst.lat,dst.lng]] },
++  ];
++}
++
++async function buildTrain(
++  src: GeoPoint, dst: GeoPoint,
++  srcStn: Place, dstStn: Place,
++  srcL: string, dstL: string
++): Promise<JourneyLeg[]> {
++  const [t1, t2, t3] = await Promise.all([
++    withDeadline(roadPath(src.lat,src.lng,srcStn.lat,srcStn.lng), 8000, null),
++    withDeadline(roadPath(srcStn.lat,srcStn.lng,dstStn.lat,dstStn.lng), 8000, null),
++    withDeadline(roadPath(dstStn.lat,dstStn.lng,dst.lat,dst.lng), 8000, null),
++  ]);
++  const k1 = t1 ? Math.round(t1.km) : Math.round(getDistance(src.lat,src.lng,srcStn.lat,srcStn.lng));
++  const m1 = t1 ? t1.mins : (k1/30)*60;
++  const k2 = t2 ? Math.round(t2.km) : Math.round(getDistance(srcStn.lat,srcStn.lng,dstStn.lat,dstStn.lng)*1.15);
++  const m2 = (k2/70)*60; // 70 km/h Indian train average
++  const k3 = t3 ? Math.round(t3.km) : Math.round(getDistance(dstStn.lat,dstStn.lng,dst.lat,dst.lng));
++  const m3 = t3 ? t3.mins : (k3/30)*60;
++  return [
++    { mode:"taxi",  origin:srcL,       destination:srcStn.name, duration:formatDuration(m1), durationMins:m1, price:`Γé╣${Math.round(k1*18)}`, distanceKm:k1, path:t1?.path??[[src.lat,src.lng],[srcStn.lat,srcStn.lng]] },
++    { mode:"train", origin:srcStn.name,destination:dstStn.name, duration:formatDuration(m2), durationMins:m2, price:`Γé╣${Math.round(k2*2.5+100)}`, distanceKm:k2, path:t2?.path??[[srcStn.lat,srcStn.lng],[dstStn.lat,dstStn.lng]] },
++    { mode:"taxi",  origin:dstStn.name,destination:dstL,        duration:formatDuration(m3), durationMins:m3, price:`Γé╣${Math.round(k3*18)}`, distanceKm:k3, path:t3?.path??[[dstStn.lat,dstStn.lng],[dst.lat,dst.lng]] },
++  ];
++}
++
++async function buildBus(
++  src: GeoPoint, dst: GeoPoint,
++  srcStn: Place, dstStn: Place,
++  srcL: string, dstL: string
++): Promise<JourneyLeg[]> {
++  const [t1, t2, t3] = await Promise.all([
++    withDeadline(roadPath(src.lat,src.lng,srcStn.lat,srcStn.lng), 8000, null),
++    withDeadline(roadPath(srcStn.lat,srcStn.lng,dstStn.lat,dstStn.lng), 8000, null),
++    withDeadline(roadPath(dstStn.lat,dstStn.lng,dst.lat,dst.lng), 8000, null),
++  ]);
++  const k1 = t1 ? Math.round(t1.km) : Math.round(getDistance(src.lat,src.lng,srcStn.lat,srcStn.lng));
++  const m1 = t1 ? t1.mins : (k1/30)*60;
++  const k2 = t2 ? Math.round(t2.km) : Math.round(getDistance(srcStn.lat,srcStn.lng,dstStn.lat,dstStn.lng)*1.2);
++  const m2 = t2 ? t2.mins : (k2/50)*60;
++  const k3 = t3 ? Math.round(t3.km) : Math.round(getDistance(dstStn.lat,dstStn.lng,dst.lat,dst.lng));
++  const m3 = t3 ? t3.mins : (k3/30)*60;
++  return [
++    { mode:"taxi", origin:srcL,       destination:srcStn.name, duration:formatDuration(m1), durationMins:m1, price:`Γé╣${Math.round(k1*18)}`, distanceKm:k1, path:t1?.path??[[src.lat,src.lng],[srcStn.lat,srcStn.lng]] },
++    { mode:"bus",  origin:srcStn.name,destination:dstStn.name, duration:formatDuration(m2), durationMins:m2, price:`Γé╣${Math.round(k2*1.5+50)}`, distanceKm:k2, path:t2?.path??[[srcStn.lat,srcStn.lng],[dstStn.lat,dstStn.lng]] },
++    { mode:"taxi", origin:dstStn.name,destination:dstL,        duration:formatDuration(m3), durationMins:m3, price:`Γé╣${Math.round(k3*18)}`, distanceKm:k3, path:t3?.path??[[dstStn.lat,dstStn.lng],[dst.lat,dst.lng]] },
++  ];
++}
++
++// ΓöÇΓöÇ Master engine ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++//
++// Decision tree (never throws ΓÇö always returns at least a straight-line road leg):
++//
++//   < 200 km              ΓåÆ Road taxi via OSRM
++//   200ΓÇô500 km            ΓåÆ Rail (if stations within 50km) ΓåÆ Bus via OSRM
++//   ΓëÑ 500 km              ΓåÆ Airports (within 250km) ΓåÆ Rail ΓåÆ Bus
++//
++// All infrastructure data: Overpass OSM API ΓÇö free, no key needed.
++// Airport radius 250 km covers Leh (110km from Pangong Tso), Cochin (110km from Munnar), etc.
++async function getSmartRoutes(sourceQuery: string, destQuery: string): Promise<JourneyLeg[][]> {
++  const [srcGeo, dstGeo] = await Promise.all([
++    geocodePlace(sourceQuery),
++    geocodePlace(destQuery),
++  ]);
++
++  if (!srcGeo || !dstGeo) {
++    console.warn(`[routes] Geocoding failed ΓÇö src:${!!srcGeo} dst:${!!dstGeo}`);
++    return [[{
++      mode: "bus",
++      origin: sourceQuery,
++      destination: destQuery,
++      duration: "Unknown",
++      durationMins: 0,
++      price: "N/A",
++      distanceKm: 0,
++      path: srcGeo && dstGeo ? [[srcGeo.lat, srcGeo.lng],[dstGeo.lat,dstGeo.lng]] : [[20.5937,78.9629],[20.5937,78.9629]],
++    }]];
++  }
++
++  const crowKm = getDistance(srcGeo.lat, srcGeo.lng, dstGeo.lat, dstGeo.lng);
++  console.log(`[routes] ${sourceQuery} ΓåÆ ${destQuery}: ${Math.round(crowKm)} km crow`);
++  const routes: JourneyLeg[][] = [];
++
++  // Short distance: Return single road route
++  if (crowKm < 200) {
++    routes.push(await buildRoad(srcGeo, dstGeo, sourceQuery, destQuery, crowKm));
++    return routes;
++  }
++
++  // Lookups based on distance
++  const isLong = crowKm >= 500;
++  
++  const [srcApt, dstApt, srcStn, dstStn, srcBus, dstBus] = await withDeadline(
++    Promise.all([
++      isLong ? findAirport(srcGeo.lat, srcGeo.lng, 250) : Promise.resolve(null),
++      isLong ? findAirport(dstGeo.lat, dstGeo.lng, 250) : Promise.resolve(null),
++      findStation(srcGeo.lat, srcGeo.lng, 50),
++      findStation(dstGeo.lat, dstGeo.lng, 50),
++      findBusStation(srcGeo.lat, srcGeo.lng, 30),
++      findBusStation(dstGeo.lat, dstGeo.lng, 30),
++    ]),
++    18000,
++    [null, null, null, null, null, null] as [Place|null, Place|null, Place|null, Place|null, Place|null, Place|null]
++  );
++
++  // 1. Primary: Flight (if long enough)
++  if (isLong && srcApt && dstApt) {
++    routes.push(await buildFlight(srcGeo, dstGeo, srcApt, dstApt, sourceQuery, destQuery));
++  }
++
++  // 2. Train route
++  if (srcStn && dstStn) {
++    routes.push(await buildTrain(srcGeo, dstGeo, srcStn, dstStn, sourceQuery, destQuery));
++  }
++
++  // 3. Structured Bus route
++  if (srcBus && dstBus) {
++    routes.push(await buildBus(srcGeo, dstGeo, srcBus, dstBus, sourceQuery, destQuery));
++  }
++
++  // Fallback direct road route if nothing else worked
++  if (routes.length === 0) {
++    routes.push(await buildRoad(srcGeo, dstGeo, sourceQuery, destQuery, crowKm));
++  } else if (!isLong && routes.length === 1) { // If only train/bus was found on medium dist, add a pure road option
++    routes.push(await buildRoad(srcGeo, dstGeo, sourceQuery, destQuery, crowKm));
++  }
++
++  return routes;
++}
++
++// ΓöÇΓöÇ GET handler ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++export async function GET(req: NextRequest) {
++  const { searchParams } = new URL(req.url);
++  const source = searchParams.get("source");
++  const dest   = searchParams.get("dest");
++  if (!source || !dest)
++    return NextResponse.json({ error: "Missing source or dest params" }, { status: 400 });
++
++  try {
++    const routes = await getSmartRoutes(source, dest);
++    return NextResponse.json({ routes });
++  } catch (err) {
++    console.error("[routes API] uncaught error:", err);
++    return NextResponse.json({ error: String(err) }, { status: 500 });
++  }
++}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/delete/route.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/delete/route.ts"
+deleted file mode 100644
+index a700299..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/delete/route.ts"	
++++ /dev/null
+@@ -1,31 +0,0 @@
+-import { NextRequest, NextResponse } from "next/server";
+-import { getServerSession } from "next-auth/next";
+-import { authOptions } from "@/lib/authOptions";
+-import dbConnect from "@/lib/mongodb";
+-import User from "@/models/User";
+-
+-export async function DELETE(req: NextRequest) {
+-  try {
+-    const session = await getServerSession(authOptions);
+-    if (!session?.user?.email) {
+-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+-    }
+-
+-    await dbConnect();
+-
+-    // Delete the user document
+-    await User.findOneAndDelete({ email: session.user.email });
+-
+-    // Also delete any NextAuth adapter documents (accounts, sessions)
+-    // We do this manually to keep things clean
+-    const client = (await import("@/lib/mongodb-client")).default;
+-    const db = (await client).db();
+-    await db.collection("accounts").deleteMany({ userId: session.user.email });
+-    await db.collection("sessions").deleteMany({ userEmail: session.user.email });
+-
+-    return NextResponse.json({ success: true });
+-  } catch (error) {
+-    console.error("Delete account error:", error);
+-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+-  }
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/update/route.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/update/route.ts"
+deleted file mode 100644
+index ac786a5..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/api/user/update/route.ts"	
++++ /dev/null
+@@ -1,54 +0,0 @@
+-import { NextRequest, NextResponse } from "next/server";
+-import { getServerSession } from "next-auth/next";
+-import { authOptions } from "@/lib/authOptions";
+-import dbConnect from "@/lib/mongodb";
+-import User from "@/models/User";
+-
+-export async function PATCH(req: NextRequest) {
+-  try {
+-    const session = await getServerSession(authOptions);
+-    if (!session?.user?.email) {
+-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+-    }
+-
+-    const { username, image } = await req.json();
+-    const updateData: Record<string, string> = {};
+-
+-    if (username) {
+-      if (username.trim().length < 3) {
+-        return NextResponse.json({ error: "Username must be at least 3 characters" }, { status: 400 });
+-      }
+-      // Check uniqueness
+-      await dbConnect();
+-      const existing = await User.findOne({ username: username.trim(), email: { $ne: session.user.email } });
+-      if (existing) {
+-        return NextResponse.json({ error: "Username already taken" }, { status: 400 });
+-      }
+-      updateData.username = username.trim();
+-    }
+-
+-    if (image !== undefined) {
+-      updateData.image = image;
+-    }
+-
+-    await dbConnect();
+-    const updatedUser = await User.findOneAndUpdate(
+-      { email: session.user.email },
+-      { $set: updateData },
+-      { new: true }
+-    );
+-
+-    return NextResponse.json({
+-      success: true,
+-      user: {
+-        username: updatedUser.username,
+-        image: updatedUser.image,
+-        name: updatedUser.name,
+-        email: updatedUser.email,
+-      },
+-    });
+-  } catch (error) {
+-    console.error("User update error:", error);
+-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+-  }
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/auth/setup-username/page.tsx" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/auth/setup-username/page.tsx"
+deleted file mode 100644
+index 08e06f1..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/auth/setup-username/page.tsx"	
++++ /dev/null
+@@ -1,108 +0,0 @@
+-"use client";
+-
+-import { useState, useEffect } from "react";
+-import { useSession } from "next-auth/react";
+-import { useRouter } from "next/navigation";
+-import Link from "next/link";
+-
+-export default function SetupUsername() {
+-  const { data: session, update } = useSession();
+-  const [username, setUsername] = useState("");
+-  const [error, setError] = useState("");
+-  const [isLoading, setIsLoading] = useState(false);
+-  const router = useRouter();
+-
+-  useEffect(() => {
+-    // If user already has a username, no need to be here
+-    // @ts-ignore
+-    if (session?.user?.username) {
+-      router.push("/");
+-    }
+-  }, [session, router]);
+-
+-  const handleSubmit = async (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setIsLoading(true);
+-    setError("");
+-
+-    try {
+-      const response = await fetch("/api/auth/setup-username", {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ username }),
+-      });
+-
+-      const data = await response.json();
+-
+-      if (!response.ok) {
+-        setError(data.error || "Failed to set username");
+-      } else {
+-        // Update session so the new username is picked up everywhere
+-        await update({ username });
+-        router.push("/");
+-      }
+-    } catch (err) {
+-      setError("An unexpected error occurred");
+-    } finally {
+-      setIsLoading(false);
+-    }
+-  };
+-
+-  if (!session) return null;
+-
+-  return (
+-    <div className="relative h-screen w-full overflow-hidden bg-[#050e1c] flex items-center justify-center">
+-      <div className="absolute inset-0 z-0 opacity-20">
+-        <img 
+-          src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop" 
+-          alt="Setup Background" 
+-          className="w-full h-full object-cover mix-blend-luminosity scale-105"
+-        />
+-        <div className="absolute inset-0 bg-gradient-to-t from-[#050e1c] via-transparent to-transparent"></div>
+-      </div>
+-
+-      <div className="relative z-10 w-full max-w-md px-6">
+-        <div className="glass-nav rounded-[2.5rem] p-10 shadow-2xl border border-white/10 flex flex-col gap-8 w-full">
+-          <div className="text-center">
+-            <h1 className="font-headline font-bold text-3xl text-white mb-2 leading-tight">Last Step!</h1>
+-            <p className="text-white/60 text-sm font-medium">Choose a unique username to complete your profile.</p>
+-          </div>
+-
+-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+-            <div className="relative">
+-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">alternate_email</span>
+-              <input
+-                type="text"
+-                placeholder="Unique Username"
+-                value={username}
+-                onChange={(e) => setUsername(e.target.value)}
+-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white text-base focus:outline-none focus:ring-2 focus:ring-[#EAED41]/50 transition-all placeholder:text-white/20"
+-                required
+-                minLength={3}
+-                pattern="^[a-zA-Z0-9_]+$"
+-                title="Username can only consist of letters, numbers, and underscores."
+-              />
+-              {error && <p className="text-red-500 text-xs mt-2 ml-2 font-medium">{error}</p>}
+-            </div>
+-
+-            <button 
+-              type="submit"
+-              disabled={isLoading}
+-              className="w-full h-[3.5rem] bg-[#EAED41] text-[#050e1c] font-headline font-bold rounded-2xl text-[15px] transition-all shadow-lg hover:shadow-[#EAED41]/20 active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 mt-2"
+-            >
+-              {isLoading ? (
+-                <div className="w-5 h-5 border-2 border-[#050e1c]/30 border-t-[#050e1c] rounded-full animate-spin"></div>
+-              ) : (
+-                "Finish Setup"
+-              )}
+-            </button>
+-          </form>
+-          
+-          <div className="text-center opacity-40">
+-            <p className="text-[10px] text-white tracking-widest uppercase font-bold">Authenticated as {session.user?.email}</p>
+-          </div>
+-        </div>
+-      </div>
+-    </div>
+-  );
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/destinations/page.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/destinations/page.tsx"
+index 4593c54..bcc0abe 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/destinations/page.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/destinations/page.tsx"	
+@@ -1,7 +1,7 @@
+ "use client";
+ 
+ import Navigation from "@/components/Navigation";
+-import { useState, useEffect } from "react";
++import { useState, useEffect, Suspense } from "react";
+ import { useSearchParams, useRouter } from "next/navigation";
+ import Link from "next/link";
+ 
+@@ -41,7 +41,7 @@ const VIBE_MAP: Record<string, string[]> = {
+   Adventure: ["Mountains", "Deserts", "Forests"],
+ };
+ 
+-export default function Destinations() {
++function DestinationsContent() {
+   const searchParams = useSearchParams();
+   const router = useRouter();
+   const vibeParam = searchParams.get("vibe");
+@@ -334,6 +334,20 @@ export default function Destinations() {
+   );
+ }
+ 
++export default function Destinations() {
++  return (
++    <Suspense 
++      fallback={
++        <div className="bg-[#050e1c] min-h-screen flex items-center justify-center">
++          <div className="w-12 h-12 border-4 border-white/10 border-t-[#EAED41] rounded-full animate-spin"></div>
++        </div>
++      }
++    >
++      <DestinationsContent />
++    </Suspense>
++  );
++}
++
+ /* ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    Horizontal scroll card for "All" category view
+    ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/globals.css" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/globals.css"
+index 1aff5d5..3c9e498 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/globals.css"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/globals.css"	
+@@ -1,3 +1,4 @@
++@import "leaflet/dist/leaflet.css";
+ @import "tailwindcss";
+ 
+ @theme {
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/layout.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/layout.tsx"
+index 9008880..cc60862 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/layout.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/layout.tsx"	
+@@ -1,12 +1,11 @@
+ import type { Metadata } from "next";
+ import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+ import "./globals.css";
+-import Providers from "@/components/Providers";
+ 
+ const jakarta = Plus_Jakarta_Sans({
+   subsets: ["latin"],
+   display: "swap",
+-  variable: "--font-plus-jakarta-sans",
++  variable: "--font-plus-jakarta-sans", // Tailwind v4 maps based on usage but this ensures injection
+ });
+ 
+ const inter = Inter({
+@@ -40,9 +39,7 @@ export default function RootLayout({
+         />
+       </head>
+       <body className={`${jakarta.variable} ${inter.variable} ${jetbrains.variable} antialiased`}>
+-        <Providers>
+-          {children}
+-        </Providers>
++        {children}
+       </body>
+     </html>
+   );
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/login/page.tsx" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/login/page.tsx"
+deleted file mode 100644
+index a26c72e..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/login/page.tsx"	
++++ /dev/null
+@@ -1,171 +0,0 @@
+-"use client";
+-
+-import { signIn } from "next-auth/react";
+-import { useState } from "react";
+-import Link from "next/link";
+-import { useRouter } from "next/navigation";
+-
+-export default function Login() {
+-  const [isLogin, setIsLogin] = useState(true);
+-  const [error, setError]     = useState("");
+-  const [isLoading, setIsLoading] = useState(false);
+-  const router = useRouter();
+-
+-  const [formData, setFormData] = useState({ name: "", username: "", email: "", password: "" });
+-
+-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+-    setFormData({ ...formData, [e.target.name]: e.target.value });
+-  };
+-
+-  const handleEmailPasswordAuth = async (e: React.FormEvent) => {
+-    e.preventDefault();
+-    setIsLoading(true);
+-    setError("");
+-    try {
+-      if (isLogin) {
+-        const result = await signIn("credentials", { redirect: false, email: formData.email, password: formData.password });
+-        if (result?.error) setError(result.error);
+-        else router.push("/");
+-      } else {
+-        const response = await fetch("/api/auth/signup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(formData) });
+-        const data = await response.json();
+-        if (!response.ok) {
+-          setError(data.error || "Signup failed");
+-        } else {
+-          await signIn("credentials", { redirect: false, email: formData.email, password: formData.password });
+-          router.push("/");
+-        }
+-      }
+-    } catch (err) {
+-      setError("An unexpected error occurred");
+-    } finally {
+-      setIsLoading(false);
+-    }
+-  };
+-
+-  return (
+-    <div className="relative h-screen w-full overflow-hidden bg-[#050e1c] flex items-center justify-center">
+-      {/* Background Image & Overlay */}
+-      <div className="absolute inset-0 z-0">
+-        <img
+-          src="https://images.unsplash.com/photo-1542314831-c6a4d142104d?q=80&w=2000&auto=format&fit=crop"
+-          alt="Login Background"
+-          className="w-full h-full object-cover scale-105 mix-blend-luminosity opacity-30"
+-        />
+-        <div className="absolute inset-0 bg-gradient-to-br from-[#050e1c] via-[#050e1c]/90 to-purple-900/50" />
+-      </div>
+-
+-      <div className="relative z-10 w-full max-w-md px-6 flex flex-col items-center">
+-        {/* Logo */}
+-        <Link href="/" className="flex items-center justify-center gap-3 mb-8 group">
+-          <span
+-            className="material-symbols-outlined text-4xl text-[#EAED41] group-hover:scale-110 transition-transform duration-500 drop-shadow-md"
+-            style={{ fontVariationSettings: "'FILL' 1" }}
+-          >
+-            explore
+-          </span>
+-          <span className="font-headline font-black text-3xl text-white tracking-tight drop-shadow-sm">
+-            TravelFlow
+-          </span>
+-        </Link>
+-
+-        {/* Card */}
+-        <div className="glass-nav rounded-[2.5rem] p-8 shadow-2xl border border-white/10 flex flex-col w-full relative overflow-hidden">
+-          {/* Decorative glow */}
+-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D30C5C]/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+-
+-          <div className="text-center mb-8">
+-            <h1 className="font-headline font-bold text-2xl text-white mb-2">
+-              {isLogin ? "Welcome Back" : "Start Journey"}
+-            </h1>
+-            <p className="text-white/50 text-sm font-medium">Capture your cinematic moments.</p>
+-          </div>
+-
+-          {error && (
+-            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs text-center font-medium">
+-              {error}
+-            </div>
+-          )}
+-
+-          <form onSubmit={handleEmailPasswordAuth} className="flex flex-col gap-4">
+-            {!isLogin && (
+-              <>
+-                <div className="relative">
+-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">person</span>
+-                  <input
+-                    type="text" name="name" placeholder="Full Name"
+-                    value={formData.name} onChange={handleInputChange}
+-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+-                    required
+-                  />
+-                </div>
+-                <div className="relative">
+-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">alternate_email</span>
+-                  <input
+-                    type="text" name="username" placeholder="Choose Username"
+-                    value={formData.username} onChange={handleInputChange}
+-                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+-                    required
+-                  />
+-                </div>
+-              </>
+-            )}
+-            <div className="relative">
+-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">mail</span>
+-              <input
+-                type="email" name="email" placeholder="Email Address"
+-                value={formData.email} onChange={handleInputChange}
+-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+-                required
+-              />
+-            </div>
+-            <div className="relative">
+-              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">lock</span>
+-              <input
+-                type="password" name="password" placeholder="Password"
+-                value={formData.password} onChange={handleInputChange}
+-                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+-                required
+-              />
+-            </div>
+-
+-            <button
+-              type="submit" disabled={isLoading}
+-              className="w-full h-[3.5rem] bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-headline font-bold rounded-2xl text-[15px] transition-all shadow-lg hover:opacity-90 active:scale-[0.98] mt-2 flex items-center justify-center gap-3 disabled:opacity-50"
+-            >
+-              {isLoading
+-                ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+-                : (isLogin ? "Sign In" : "Create Account")
+-              }
+-            </button>
+-          </form>
+-
+-          {/* Divider */}
+-          <div className="flex items-center gap-4 my-6">
+-            <div className="h-[1px] flex-1 bg-white opacity-10" />
+-            <span className="text-white text-[10px] uppercase font-bold tracking-widest opacity-40">OR</span>
+-            <div className="h-[1px] flex-1 bg-white opacity-10" />
+-          </div>
+-
+-          <button
+-            type="button"
+-            onClick={() => signIn("google", { callbackUrl: "/" })}
+-            className="w-full h-[3.5rem] bg-white text-[#050e1c] font-headline font-bold rounded-2xl text-[15px] transition-all hover:opacity-90 flex items-center justify-center gap-4 group"
+-          >
+-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-[20px] h-[20px]" />
+-            <span>Continue with Google</span>
+-          </button>
+-
+-          <div className="text-center mt-6">
+-            <button
+-              onClick={() => setIsLogin(!isLogin)}
+-              className="text-white/60 hover:text-white text-sm font-medium transition-colors"
+-            >
+-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Login"}
+-            </button>
+-          </div>
+-        </div>
+-      </div>
+-    </div>
+-  );
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/page.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/page.tsx"
+index acc8ffa..a343f54 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/page.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/page.tsx"	
+@@ -107,6 +107,9 @@ export default function Home() {
+   const searchSectionRef = useRef<HTMLDivElement>(null);
+ 
+   // Search bar state
++  const [sourceQuery, setSourceQuery] = useState("");
++  const [selectedSource, setSelectedSource] = useState<{ _id: string; title: string } | null>(null);
++  
+   const [destinationQuery, setDestinationQuery] = useState("");
+   const [selectedDestination, setSelectedDestination] = useState<{ _id: string; title: string } | null>(null);
+   const [startDate, setStartDate] = useState<Date | null>(null);
+@@ -241,7 +244,7 @@ export default function Home() {
+               
+               <div className="pt-8 flex items-center gap-6">
+                 <Link 
+-                  href={`/plan?dest=${encodeURIComponent(activeLoc.title)}`}
++                  href={`/plan?source=New%20Delhi&dest=${encodeURIComponent(activeLoc.title)}`}
+                   style={{ backgroundColor: activeLoc.accentColor }}
+                   className="text-[#050e1c] px-10 py-4 rounded-full font-headline font-bold flex items-center gap-3 group hover:opacity-90 hover:-translate-y-1 transition-all shadow-xl"
+                 >
+@@ -354,11 +357,20 @@ export default function Home() {
+                       isSearchExpanded ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none absolute'
+                   }`}
+                >
+-                   <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-4 px-6 py-4 md:py-0 gap-6 md:gap-4 whitespace-nowrap">
++                   <div className="flex-1 w-full grid grid-cols-2 lg:grid-cols-5 px-6 py-4 md:py-0 gap-6 md:gap-4 whitespace-nowrap">
++                      <DestinationAutocomplete
++                        value={sourceQuery}
++                        onChange={setSourceQuery}
++                        onSelect={(s) => setSelectedSource(s ? { _id: s._id, title: s.title } : null)}
++                        label="Source"
++                        placeholder="Where from?"
++                      />
+                       <DestinationAutocomplete
+                         value={destinationQuery}
+                         onChange={setDestinationQuery}
+                         onSelect={(s) => setSelectedDestination(s ? { _id: s._id, title: s.title } : null)}
++                        label="Destination"
++                        placeholder="Where to?"
+                       />
+                       <CalendarPicker
+                         startDate={startDate}
+@@ -398,10 +410,11 @@ export default function Home() {
+                        </button>
+                         <button 
+                            onClick={() => {
++                             const sourceParam = selectedSource ? encodeURIComponent(selectedSource.title) : "New Delhi";
+                              if (selectedDestination) {
+-                               router.push(`/plan?dest=${encodeURIComponent(selectedDestination.title)}&tab=hotels`);
++                               router.push(`/plan?source=${sourceParam}&dest=${encodeURIComponent(selectedDestination.title)}&tab=hotels`);
+                              } else {
+-                               router.push(`/plan?vibe=${encodeURIComponent(selectedVibe)}&tab=hotels`);
++                               router.push(`/plan?source=${sourceParam}&vibe=${encodeURIComponent(selectedVibe)}&tab=hotels`);
+                              }
+                            }}
+                            className="flex-1 md:flex-none h-12 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-bold px-8 justify-center rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2 cursor-pointer"
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/GuidesTab.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/GuidesTab.tsx"
+index ba41f71..2fad397 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/GuidesTab.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/GuidesTab.tsx"	
+@@ -1,6 +1,10 @@
+ import { PLAN_GUIDES } from "@/lib/data";
+ 
+-export default function GuidesTab() {
++interface Props {
++  destination?: string;
++}
++
++export default function GuidesTab({ destination = "Destination" }: Props) {
+   return (
+     <div className="fade-in flex flex-col gap-6">
+       <h2 className="text-2xl font-headline font-bold border-b border-white/10 pb-4 flex items-center gap-3">
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/HotelDetailView.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/HotelDetailView.tsx"
+index d8e8c8c..aa96c9b 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/HotelDetailView.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/HotelDetailView.tsx"	
+@@ -9,9 +9,10 @@ interface HotelDetailViewProps {
+   hotelName: string;
+   onBack: () => void;
+   onBookItem?: (price: number) => void;
++  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
+ }
+ 
+-export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem }: HotelDetailViewProps) {
++export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem, onHotelSelect }: HotelDetailViewProps) {
+   const [hotel, setHotel] = useState<any>(null);
+   const [loading, setLoading] = useState(true);
+   const [showPropertyModal, setShowPropertyModal] = useState(false);
+@@ -285,7 +286,7 @@ export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem
+         <h3 className="text-2xl font-headline font-bold text-white mb-6">Choose your room</h3>
+         <div className="flex flex-col gap-6">
+           {(hotel.rooms && hotel.rooms.length > 0 ? hotel.rooms : generateFallbackRooms()).map((room: any, i: number) => (
+-            <RoomCard key={room.id || i} room={room} index={i} onBookItem={onBookItem} />
++            <RoomCard key={room.id || i} room={room} index={i} hotelName={hotel.name} hotelAddress={hotel.address} onBookItem={onBookItem} onHotelSelect={onHotelSelect} />
+           ))}
+         </div>
+       </div>
+@@ -310,7 +311,14 @@ export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem
+ }
+ 
+ /* ======================== ROOM CARD ======================== */
+-function RoomCard({ room, index, onBookItem }: { room: any; index: number; onBookItem?: (price: number) => void }) {
++function RoomCard({ room, index, hotelName, hotelAddress, onBookItem, onHotelSelect }: {
++  room: any;
++  index: number;
++  hotelName?: string;
++  hotelAddress?: string;
++  onBookItem?: (price: number) => void;
++  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
++}) {
+   const [selectedExtra, setSelectedExtra] = useState(0);
+   const [isReserved, setIsReserved] = useState(false);
+ 
+@@ -445,6 +453,12 @@ function RoomCard({ room, index, onBookItem }: { room: any; index: number; onBoo
+             onClick={() => {
+               setIsReserved(true);
+               if (onBookItem) onBookItem(currentPriceRaw);
++              if (onHotelSelect) onHotelSelect({
++                name: hotelName || room.name,
++                address: hotelAddress,
++                price: currentPriceFormatted,
++                roomType: room.name,
++              });
+             }}
+             className="w-full bg-[#3B6FE8] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#2d5bc9] transition-colors shadow-lg shadow-[#3B6FE8]/20"
+           >
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/HotelsTab.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/HotelsTab.tsx"
+index b13e20c..9fe5535 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/HotelsTab.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/HotelsTab.tsx"	
+@@ -6,6 +6,7 @@ import HotelDetailView from "./HotelDetailView";
+ interface HotelsTabProps {
+   destination: string;
+   onBookItem?: (price: number) => void;
++  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
+ }
+ 
+ interface Hotel {
+@@ -23,7 +24,7 @@ interface Hotel {
+   badge: string;
+ }
+ 
+-export default function HotelsTab({ destination, onBookItem }: HotelsTabProps) {
++export default function HotelsTab({ destination, onBookItem, onHotelSelect }: HotelsTabProps) {
+   const [hotels, setHotels] = useState<Hotel[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState("");
+@@ -75,6 +76,7 @@ export default function HotelsTab({ destination, onBookItem }: HotelsTabProps) {
+         hotelName={selectedHotel.name}
+         onBack={() => setSelectedHotel(null)}
+         onBookItem={onBookItem}
++        onHotelSelect={onHotelSelect}
+       />
+     );
+   }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/PlanMap.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/PlanMap.tsx"
+index 7a6ac7e..d75a927 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/PlanMap.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/PlanMap.tsx"	
+@@ -1,74 +1,45 @@
+-export default function PlanMap() {
+-  return (
+-    <section className="hidden lg:block w-1/2 relative bg-[#121c2a] overflow-hidden">
+-      {/* Map Background */}
+-      <div 
+-        className="absolute inset-0 grayscale contrast-125 opacity-40 mix-blend-luminosity" 
+-        style={{ 
+-            backgroundImage: "url('https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2000&auto=format&fit=crop')", 
+-            backgroundSize: 'cover', 
+-            backgroundPosition: 'center' 
+-        }}
+-      ></div>
+-      <div className="absolute inset-0 bg-[#050e1c]/60"></div>
+-      
+-      {/* SVG Route Mapping Overlay */}
+-      <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-[0_0_10px_rgba(59,111,232,0.5)]" viewBox="0 0 800 1000" preserveAspectRatio="xMidYMid slice">
+-        <path className="opacity-80 drop-shadow-lg" d="M100 800 L350 550 L500 400 L650 150" fill="none" stroke="#3b6fe8" strokeDasharray="12 8" strokeWidth="4"></path>
+-        
+-        {/* Nav nodes mapped to points on the path */}
+-        <g transform="translate(100, 800)">
+-          <circle fill="#3b6fe8" r="24" className="shadow-lg"></circle>
+-          <text fill="white" fontFamily="Material Symbols Outlined" fontSize="24" x="-12" y="8">directions_bus</text>
+-          <rect fill="rgba(5, 14, 28, 0.8)" height="30" rx="15" width="100" x="35" y="-15" stroke="rgba(255,255,255,0.2)"></rect>
+-          <text fill="white" fontSize="12" fontWeight="bold" fontFamily="monospace" x="45" y="5">Delhi ISBT</text>
+-        </g>
+-        
+-        <g transform="translate(350, 550)">
+-          <circle fill="#D30C5C" r="24"></circle>
+-          <text fill="white" fontFamily="Material Symbols Outlined" fontSize="24" x="-12" y="8">bed</text>
+-          <rect fill="rgba(5, 14, 28, 0.8)" height="30" rx="15" width="120" x="35" y="-15" stroke="rgba(255,255,255,0.2)"></rect>
+-          <text fill="white" fontSize="12" fontWeight="bold" fontFamily="monospace" x="45" y="5">Hotel Retreat</text>
+-        </g>
+-        
+-        <g transform="translate(650, 150)">
+-          <circle fill="#B4D104" r="24"></circle>
+-          <text fill="white" fontFamily="Material Symbols Outlined" fontSize="24" x="-12" y="8">hiking</text>
+-          <rect fill="rgba(5, 14, 28, 0.8)" height="30" rx="15" width="110" x="-135" y="-15" stroke="rgba(255,255,255,0.2)"></rect>
+-          <text fill="white" fontSize="12" fontWeight="bold" fontFamily="monospace" x="-125" y="5">Beas Summit</text>
+-        </g>
+-      </svg>
+-      
+-      {/* Map Floating Controls */}
+-      <div className="absolute top-8 right-8 flex flex-col gap-4">
+-        <div className="glass-nav border border-white/20 p-2 rounded-2xl flex flex-col gap-2">
+-          <button className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors">
+-            <span className="material-symbols-outlined text-white">add</span>
+-          </button>
+-          <div className="h-px bg-white/10 mx-2"></div>
+-          <button className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors">
+-            <span className="material-symbols-outlined text-white">remove</span>
+-          </button>
+-        </div>
+-        <button className="glass-nav border border-white/20 w-14 h-14 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg">
+-          <span className="material-symbols-outlined text-white">layers</span>
+-        </button>
+-      </div>
+-      
+-      <div className="absolute bottom-10 left-10">
+-        <div className="glass-nav border border-white/20 p-5 rounded-3xl max-w-sm shadow-2xl backdrop-blur-2xl">
+-          <p className="font-technical text-[10px] uppercase tracking-widest font-bold text-[#3B6FE8] mb-3">Live Tracking</p>
+-          <div className="flex items-center gap-4">
+-            <div className="w-14 h-14 rounded-xl bg-white/10 overflow-hidden flex items-center justify-center shrink-0 border border-white/20">
+-              <span className="material-symbols-outlined text-2xl text-white">directions_bus</span>
+-            </div>
+-            <div>
+-              <p className="font-headline font-bold text-white text-lg">En Route to Destination</p>
+-              <p className="text-white/60 font-medium text-sm mt-1">Arrival estimated 08:30 AM</p>
+-            </div>
+-          </div>
++"use client";
++
++import dynamic from "next/dynamic";
++import type { ComponentType } from "react";
++
++import { JourneyLeg } from "@/app/api/routes/route";
++
++interface PlanMapProps {
++  source?: string;
++  destination?: string;
++  /** Callback fired when GPS resolves the user's city */
++  onLocate?: (cityName: string) => void;
++  routesList?: JourneyLeg[][];
++  activeRouteIdx?: number;
++  loading?: boolean;
++}
++
++// Leaflet requires the browser's `window` object, so we must disable SSR.
++const PlanMapLeaflet = dynamic<PlanMapProps>(
++  () => import("./PlanMapLeaflet") as Promise<{ default: ComponentType<PlanMapProps> }>,
++  {
++    ssr: false,
++    loading: () => (
++      <section className="hidden lg:flex w-1/2 relative bg-[#121c2a] overflow-hidden items-center justify-center">
++        <div className="flex flex-col items-center gap-4 text-white/40">
++          <span className="material-symbols-outlined text-5xl animate-pulse">map</span>
++          <p className="font-technical text-xs uppercase tracking-widest">Loading MapΓÇª</p>
+         </div>
+-      </div>
+-    </section>
++      </section>
++    ),
++  }
++);
++
++export default function PlanMap({ source, destination, onLocate, routesList, activeRouteIdx, loading }: PlanMapProps) {
++  return (
++    <PlanMapLeaflet 
++      source={source} 
++      destination={destination} 
++      onLocate={onLocate} 
++      routesList={routesList}
++      activeRouteIdx={activeRouteIdx}
++      loading={loading}
++    />
+   );
+ }
+diff --git "a/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/PlanMapLeaflet.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/PlanMapLeaflet.tsx"
+new file mode 100644
+index 0000000..804c996
+--- /dev/null
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/PlanMapLeaflet.tsx"	
+@@ -0,0 +1,680 @@
++"use client";
++
++import { useEffect, useState, useCallback, useRef } from "react";
++import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, LayerGroup } from "react-leaflet";
++import L from "leaflet";
++import { geocodePlace, reverseGeocode, GeoPoint } from "@/lib/geocode";
++import { JourneyLeg } from "@/app/api/routes/route";
++
++// ΓöÇΓöÇ Fix Leaflet's default icon paths being broken by webpack ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
++L.Icon.Default.mergeOptions({
++  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
++  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
++  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
++});
++
++// ΓöÇΓöÇ Custom circular icons ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function makeCircleIcon(color: string, symbol: string) {
++  return L.divIcon({
++    className: "",
++    html: `
++      <div style="
++        width:48px; height:48px; border-radius:50%;
++        background:${color}; display:flex; align-items:center; justify-content:center;
++        box-shadow:0 0 20px ${color}99, 0 2px 8px rgba(0,0,0,0.5);
++        border:2px solid rgba(255,255,255,0.2);
++      ">
++        <span class="material-symbols-outlined" style="color:white;font-size:22px;line-height:1">${symbol}</span>
++      </div>`,
++    iconSize: [48, 48],
++    iconAnchor: [24, 24],
++    popupAnchor: [0, -28],
++  });
++}
++
++// ΓöÇΓöÇ Pulsing "You Are Here" current location icon ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function makeCurrentLocationIcon() {
++  return L.divIcon({
++    className: "",
++    html: `
++      <div style="position:relative;width:48px;height:48px;display:flex;align-items:center;justify-content:center;">
++        <div style="
++          position:absolute; width:48px; height:48px; border-radius:50%;
++          background:rgba(59,111,232,0.15); border:2px solid rgba(59,111,232,0.5);
++          animation: tf-pulse 2s ease-out infinite;
++        "></div>
++        <div style="
++          position:absolute; width:30px; height:30px; border-radius:50%;
++          background:rgba(59,111,232,0.25); border:2px solid rgba(59,111,232,0.7);
++          animation: tf-pulse 2s ease-out 0.4s infinite;
++        "></div>
++        <div style="
++          position:relative; width:14px; height:14px; border-radius:50%;
++          background:#3B6FE8; border:3px solid white;
++          box-shadow:0 0 12px rgba(59,111,232,0.8); z-index:1;
++        "></div>
++      </div>`,
++    iconSize: [48, 48],
++    iconAnchor: [24, 24],
++    popupAnchor: [0, -28],
++  });
++}
++
++const ICON_BUS   = makeCircleIcon("#3B6FE8", "directions_bus");
++const ICON_HOTEL = makeCircleIcon("#D30C5C", "bed");
++const ICON_TREK  = makeCircleIcon("#B4D104", "hiking");
++
++// Source: blue departure dot
++function makeSourceIcon() {
++  return L.divIcon({
++    className: "",
++    html: `<div style="
++      width:44px;height:44px;border-radius:50%;
++      background:#3B6FE8;display:flex;align-items:center;justify-content:center;
++      box-shadow:0 0 24px rgba(59,111,232,0.8),0 0 6px rgba(0,0,0,0.6);
++      border:3px solid white;
++    "><span class="material-symbols-outlined" style="color:white;font-size:20px;line-height:1">trip_origin</span></div>`,
++    iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -26],
++  });
++}
++// Destination: pink flag dot
++function makeDestIcon() {
++  return L.divIcon({
++    className: "",
++    html: `<div style="
++      width:44px;height:44px;border-radius:50%;
++      background:#D30C5C;display:flex;align-items:center;justify-content:center;
++      box-shadow:0 0 24px rgba(211,12,92,0.8),0 0 6px rgba(0,0,0,0.6);
++      border:3px solid white;
++    "><span class="material-symbols-outlined" style="color:white;font-size:20px;line-height:1">flag</span></div>`,
++    iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -26],
++  });
++}
++
++// ΓöÇΓöÇ MapController: fly to destination when it changes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
++  const map = useMap();
++  useEffect(() => { map.flyTo(center, zoom, { duration: 1.5 }); }, [center, zoom, map]);
++  return null;
++}
++
++// ΓöÇΓöÇ FlyToHandler: fly to GPS position ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function FlyToHandler({ target }: { target: [number, number] | null }) {
++  const map = useMap();
++  useEffect(() => { if (target) map.flyTo(target, 13, { duration: 2 }); }, [target, map]);
++  return null;
++}
++
++// ΓöÇΓöÇ MapRefSetter: captures genuine Leaflet map instance into a ref ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function MapRefSetter({ mapRef }: { mapRef: React.MutableRefObject<L.Map | null> }) {
++  const map = useMap();
++  useEffect(() => { mapRef.current = map; }, [map, mapRef]);
++  return null;
++}
++
++// ΓöÇΓöÇ FitBoundsHandler: auto-zoom map to show the full route ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function FitBoundsHandler({ points }: { points: [number, number][] }) {
++  const map = useMap();
++  useEffect(() => {
++    if (points.length >= 2) {
++      const bounds = L.latLngBounds(points.map(p => L.latLng(p[0], p[1])));
++      map.fitBounds(bounds, { padding: [80, 80], animate: true, duration: 1.5 });
++    }
++  // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [JSON.stringify(points)]);
++  return null;
++}
++
++// ΓöÇΓöÇ Waypoints relative to destination center ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++function getWaypoints(center: [number, number]) {
++  const [lat, lng] = center;
++  return [
++    { pos: [lat + 0.005, lng + 0.015] as [number, number], icon: ICON_HOTEL, label: "Your Hotel",  type: "Stay"     },
++    { pos: [lat + 0.020, lng - 0.005] as [number, number], icon: ICON_TREK,  label: "Trek Point",  type: "Activity" },
++  ];
++}
++
++const DARK_TILE   = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
++const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
++
++// ΓöÇΓöÇ Main component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++interface Props {
++  source?: string;
++  destination?: string;
++  onLocate?: (cityName: string) => void;
++  routesList?: JourneyLeg[][];
++  activeRouteIdx?: number;
++  loading?: boolean;
++}
++
++const DEFAULT_CENTER: [number, number] = [32.2432, 77.1892]; // Manali
++const DEFAULT_ZOOM = 11;
++
++type GeoStatus = "idle" | "loading" | "success" | "denied" | "unavailable" | "error";
++
++export default function PlanMapLeaflet({ source, destination, onLocate, routesList = [], activeRouteIdx = 0, loading = false }: Props) {
++  const [center, setCenter]       = useState<[number, number]>(DEFAULT_CENTER);
++  const [mapZoom, setMapZoom]     = useState(DEFAULT_ZOOM);
++  const [geoLabel, setGeoLabel]   = useState<string>("");
++  const [isGeocoding, setIsGeocoding] = useState(false);
++  const [layerMode, setLayerMode] = useState<"dark" | "satellite">("dark");
++
++  // Geocoded endpoint pins ΓÇö shown even before routes load
++  const [srcPoint, setSrcPoint]   = useState<[number,number] | null>(null);
++  const [dstPoint, setDstPoint]   = useState<[number,number] | null>(null);
++
++  // GPS state
++  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null);
++  const [flyToTarget, setFlyToTarget]         = useState<[number, number] | null>(null);
++  const [geoStatus, setGeoStatus]             = useState<GeoStatus>("idle");
++  const [geoErrorMsg, setGeoErrorMsg]         = useState<string>("");
++  // Manual city fallback (used when GPS is blocked)
++  const [manualCity, setManualCity]           = useState("");
++  const [manualLoading, setManualLoading]     = useState(false);
++
++  // FIX: ref to the real Leaflet map instance for programmatic zoom
++  const mapRef = useRef<L.Map | null>(null);
++
++  // Geocode BOTH endpoints to show pins while routes are fetching
++  useEffect(() => {
++    if (!destination) return;
++    let cancelled = false;
++    setIsGeocoding(true);
++    setGeoLabel("");
++    setSrcPoint(null);
++    setDstPoint(null);
++
++    // Geocode destination ΓåÆ move map center
++    geocodePlace(destination).then((result: GeoPoint | null) => {
++      if (cancelled) return;
++      if (result) {
++        const dp: [number,number] = [result.lat, result.lng];
++        setCenter(dp);
++        setDstPoint(dp);
++        setMapZoom(5); // zoom out to show both pins
++        setGeoLabel(result.displayName.split(",")[0]);
++      }
++      setIsGeocoding(false);
++    });
++
++    // Geocode source ΓåÆ store srcPoint
++    if (source) {
++      geocodePlace(source).then((result: GeoPoint | null) => {
++        if (cancelled || !result) return;
++        setSrcPoint([result.lat, result.lng]);
++      });
++    }
++
++    return () => { cancelled = true; };
++  }, [source, destination]);
++
++
++  // FIX: "Use My Location" handler
++  // The old overlay div had no pointer-events control, so Leaflet was intercepting
++  // the click before it reached our button. Now we set pointer-events:none on the
++  // container div and pointer-events:auto on each individual button (see JSX below).
++  const handleLocateMe = useCallback(() => {
++    if (!navigator.geolocation) {
++      setGeoStatus("unavailable");
++      setGeoErrorMsg("Geolocation is not supported by your browser.");
++      return;
++    }
++    setGeoStatus("loading");
++    setGeoErrorMsg("");
++
++    navigator.geolocation.getCurrentPosition(
++      async (pos) => {
++        const lat = pos.coords.latitude;
++        const lng = pos.coords.longitude;
++        const coords: [number, number] = [lat, lng];
++        setCurrentLocation(coords);
++        setFlyToTarget(coords);
++        setGeoStatus("success");
++        const cityName = await reverseGeocode(lat, lng);
++        if (cityName && onLocate) onLocate(cityName);
++      },
++      (err) => {
++        if (err.code === err.PERMISSION_DENIED) {
++          setGeoStatus("denied");
++          setGeoErrorMsg("Location access denied. Please allow location in your browser settings.");
++        } else if (err.code === err.POSITION_UNAVAILABLE) {
++          setGeoStatus("unavailable");
++          setGeoErrorMsg("Your location could not be determined.");
++        } else {
++          setGeoStatus("error");
++          setGeoErrorMsg("Location request timed out. Try again.");
++        }
++      },
++      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
++    );
++  }, [onLocate]);
++
++  const waypoints = getWaypoints(center);
++
++  const TILE_URL = layerMode === "dark"
++    ? DARK_TILE
++    : "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
++  const TILE_ATTR = layerMode === "dark"
++    ? ATTRIBUTION
++    : "Tiles &copy; Esri ΓÇö Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community";
++
++  return (
++    <section className="hidden lg:block w-1/2 relative bg-[#121c2a] overflow-hidden">
++
++      {/* Pulse animation + Leaflet popup dark theme */}
++      <style>{`
++        @keyframes tf-pulse {
++          0%   { transform: scale(0.8); opacity: 0.9; }
++          70%  { transform: scale(1.6); opacity: 0; }
++          100% { transform: scale(0.8); opacity: 0; }
++        }
++        .leaflet-popup-content-wrapper {
++          background: #0a1422 !important;
++          border: 1px solid rgba(255,255,255,0.15) !important;
++          border-radius: 12px !important;
++          box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
++          color: #fff !important;
++        }
++        .leaflet-popup-tip { background: #0a1422 !important; }
++        .leaflet-popup-close-button { color: rgba(255,255,255,0.5) !important; }
++        .leaflet-control-attribution {
++          background: rgba(5,14,28,0.7) !important;
++          color: rgba(255,255,255,0.4) !important;
++          font-size: 9px !important;
++        }
++        .leaflet-control-attribution a { color: rgba(255,255,255,0.5) !important; }
++      `}</style>
++
++      {/* ΓöÇΓöÇ Leaflet Map ΓöÇΓöÇ */}
++      <MapContainer
++        center={center}
++        zoom={DEFAULT_ZOOM}
++        style={{ width: "100%", height: "100%" }}
++        zoomControl={false}
++        attributionControl={true}
++      >
++        <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
++        <MapController center={center} zoom={mapZoom} />
++        <FlyToHandler target={flyToTarget} />
++
++        {/* FIX: captures real map instance so zoom buttons can call map.zoomIn/Out() */}
++        <MapRefSetter mapRef={mapRef} />
++
++        {/* ΓöÇΓöÇ Pre-route placeholders ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++            Show source + destination pins and a dashed line immediately after
++            geocoding, even before the /api/routes response arrives.
++            These are replaced by the full coloured route once routes load. */}
++        {routesList.length === 0 && srcPoint && dstPoint && (
++          <LayerGroup>
++            <FitBoundsHandler points={[srcPoint, dstPoint]} />
++            {/* Dashed placeholder route line */}
++            <Polyline
++              positions={[srcPoint, dstPoint]}
++              pathOptions={{ color: "#ffffff", weight: 2, opacity: 0.18, dashArray: "10, 16" }}
++            />
++            {/* Source pin */}
++            <Marker position={srcPoint} icon={makeSourceIcon()}>
++              <Popup>
++                <div style={{ fontFamily: "sans-serif", minWidth: 130 }}>
++                  <p style={{ fontSize: 10, color: "#3B6FE8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>≡ƒÜ⌐ Departure</p>
++                  <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{source?.split(",")[0]}</p>
++                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>Calculating routeΓÇª</p>
++                </div>
++              </Popup>
++            </Marker>
++            {/* Destination pin */}
++            <Marker position={dstPoint} icon={makeDestIcon()}>
++              <Popup>
++                <div style={{ fontFamily: "sans-serif", minWidth: 130 }}>
++                  <p style={{ fontSize: 10, color: "#D30C5C", textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>≡ƒÅü Destination</p>
++                  <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{destination?.split(",")[0]}</p>
++                </div>
++              </Popup>
++            </Marker>
++          </LayerGroup>
++        )}
++
++        {/* ΓöÇΓöÇ Route rendering ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++            Layer order (bottom ΓåÆ top):
++            1. Unselected routes (faded dashed lines)
++            2. Selected route glow underlay
++            3. Selected route coloured legs (connectors dashed, main paths solid)
++            4. Source / Destination markers
++        ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ */}
++        {routesList.length > 0 && (() => {
++          const activeRoute = routesList[activeRouteIdx] || routesList[0];
++          const allPoints: [number, number][] = activeRoute.flatMap(leg => leg.path);
++          const sourcePos  = activeRoute[0].path[0];
++          const lastLeg    = activeRoute[activeRoute.length - 1];
++          const destPos    = lastLeg.path[lastLeg.path.length - 1];
++
++          return (
++            <LayerGroup>
++              <FitBoundsHandler points={allPoints} />
++
++              {/* Inactive routes */}
++              {routesList.map((route, rIdx) => {
++                if (rIdx === activeRouteIdx) return null;
++                const path = route.flatMap(l => l.path);
++                return (
++                  <Polyline
++                    key={`alt-${rIdx}`}
++                    positions={path}
++                    pathOptions={{ color: "#ffffff", weight: 3, opacity: 0.1, dashArray: "5, 10" }}
++                  />
++                );
++              })}
++
++              {/* Active Route Glow */}
++              <Polyline
++                positions={allPoints}
++                pathOptions={{ color: "#ffffff", weight: 16, opacity: 0.07, lineCap: "round", lineJoin: "round" }}
++              />
++              <Polyline
++                positions={allPoints}
++                pathOptions={{ color: "#3B6FE8", weight: 8, opacity: 0.12, lineCap: "round", lineJoin: "round" }}
++              />
++
++              {/* Active Route Legs */}
++              {activeRoute.map((leg, idx) => {
++                let color = "#EAED41";
++                if (leg.mode === "flight") color = "#DF33DF";
++                if (leg.mode === "train")  color = "#0EBCDC";
++                if (leg.mode === "bus")    color = "#3B6FE8";
++                
++                // Identify connector paths (local taxi transit to/from hub)
++                const isConnector = leg.mode === "taxi" && (idx === 0 || idx === activeRoute.length - 1);
++                const isFlight = leg.mode === "flight";
++
++                let dashStr = undefined;
++                let weight = 4;
++                if (isConnector) { dashStr = "4, 8"; weight = 3; color="#ffffff"; }
++                else if (isFlight) { dashStr = "10, 14"; weight = 3; }
++
++                return (
++                  <LayerGroup key={`leg-${idx}`}>
++                    <Polyline
++                      positions={leg.path}
++                      pathOptions={{ color, weight: isConnector ? 8 : 10, opacity: isConnector ? 0.05 : 0.18, lineCap: "round", lineJoin: "round" }}
++                    />
++                    <Polyline
++                      positions={leg.path}
++                      pathOptions={{
++                        color,
++                        weight,
++                        opacity: isConnector ? 0.7 : 0.95,
++                        dashArray: dashStr,
++                        lineCap: "round",
++                        lineJoin: "round",
++                      }}
++                    />
++                    {!isConnector && idx > 0 && (
++                      <Marker position={leg.path[0]} icon={ICON_BUS}>
++                        <Popup>
++                          <div style={{ fontFamily: "sans-serif", minWidth: 130 }}>
++                            <p style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: 2, marginBottom: 2 }}>
++                              {leg.mode} ΓÇó Hub
++                            </p>
++                            <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>
++                              {leg.origin.split(",")[0]}
++                            </p>
++                          </div>
++                        </Popup>
++                      </Marker>
++                    )}
++                  </LayerGroup>
++                );
++              })}
++
++              <Marker position={sourcePos} icon={makeSourceIcon()}>
++                <Popup>
++                  <div style={{ fontFamily: "sans-serif", minWidth: 140 }}>
++                    <p style={{ fontSize: 10, color: "#3B6FE8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>≡ƒÜ⌐ Departure</p>
++                    <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{activeRoute[0].origin.split(",")[0]}</p>
++                  </div>
++                </Popup>
++              </Marker>
++
++              <Marker position={destPos} icon={makeDestIcon()}>
++                <Popup>
++                  <div style={{ fontFamily: "sans-serif", minWidth: 140 }}>
++                    <p style={{ fontSize: 10, color: "#D30C5C", textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>≡ƒÅü Destination</p>
++                    <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{lastLeg.destination.split(",")[0]}</p>
++                  </div>
++                </Popup>
++              </Marker>
++            </LayerGroup>
++          );
++        })()}
++
++        {/* Destination local markers */}
++        {waypoints.map((wp, i) => (
++          <Marker key={i} position={wp.pos} icon={wp.icon}>
++            <Popup>
++              <div style={{ fontFamily: "sans-serif", minWidth: 120 }}>
++                <p style={{ fontSize: 10, color: "#3B6FE8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 2 }}>{wp.type}</p>
++                <p style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{wp.label}</p>
++              </div>
++            </Popup>
++          </Marker>
++        ))}
++
++        {/* Pulsing current location marker */}
++        {currentLocation && (
++          <Marker position={currentLocation} icon={makeCurrentLocationIcon()}>
++            <Popup>
++              <div style={{ fontFamily: "sans-serif", minWidth: 140 }}>
++                <p style={{ fontSize: 10, color: "#3B6FE8", textTransform: "uppercase", letterSpacing: 2, marginBottom: 4 }}>≡ƒôì Your Location</p>
++                <p style={{ fontWeight: 700, fontSize: 13, color: "#fff" }}>
++                  {currentLocation[0].toFixed(4)}┬░ N, {currentLocation[1].toFixed(4)}┬░ E
++                </p>
++                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>Detected via GPS</p>
++              </div>
++            </Popup>
++          </Marker>
++        )}
++      </MapContainer>
++
++      {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++          OVERLAY CONTROLS
++          FIX: pointerEvents:"none" on the container div lets Leaflet receive map
++          drag/pan events. Each interactive button gets pointerEvents:"auto" so
++          clicks still reach them. Without this, Leaflet's event listeners swallow
++          the click before it reaches our button handlers.
++      ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
++      <div
++        className="absolute top-8 right-8 flex flex-col gap-4"
++        style={{ zIndex: 1000, pointerEvents: "none" }}
++      >
++        {/* Zoom controls */}
++        <div
++          className="glass-nav border border-white/20 p-2 rounded-2xl flex flex-col gap-2 shadow-xl"
++          style={{ pointerEvents: "auto" }}
++        >
++          {/* FIX: call map.zoomIn() via ref instead of clicking a non-existent DOM element */}
++          <button
++            type="button"
++            title="Zoom In"
++            className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
++            onClick={() => mapRef.current?.zoomIn()}
++          >
++            <span className="material-symbols-outlined text-white">add</span>
++          </button>
++          <div className="h-px bg-white/10 mx-2" />
++          <button
++            type="button"
++            title="Zoom Out"
++            className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-xl transition-colors cursor-pointer"
++            onClick={() => mapRef.current?.zoomOut()}
++          >
++            <span className="material-symbols-outlined text-white">remove</span>
++          </button>
++        </div>
++
++        {/* Use My Location button */}
++        <button
++          type="button"
++          title="Use My Location"
++          onClick={handleLocateMe}
++          disabled={geoStatus === "loading"}
++          style={{ pointerEvents: "auto" }}
++          className={`glass-nav border w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg cursor-pointer disabled:cursor-wait
++            ${geoStatus === "success"
++              ? "border-[#3B6FE8] bg-[#3B6FE8]/20 shadow-[0_0_20px_rgba(59,111,232,0.4)]"
++              : (geoStatus === "denied" || geoStatus === "error" || geoStatus === "unavailable")
++              ? "border-red-500/50 bg-red-900/20"
++              : "border-white/20 hover:bg-white/10"
++            }`}
++        >
++          <span
++            className={`material-symbols-outlined text-white ${geoStatus === "loading" ? "animate-pulse" : ""}`}
++            style={geoStatus === "success" ? { color: "#3B6FE8" } : {}}
++          >
++            {geoStatus === "loading" ? "refresh" : "my_location"}
++          </span>
++        </button>
++
++        {/* Layer toggle */}
++        <button
++          type="button"
++          title={layerMode === "dark" ? "Switch to Satellite" : "Switch to Dark"}
++          onClick={() => setLayerMode(m => m === "dark" ? "satellite" : "dark")}
++          style={{ pointerEvents: "auto" }}
++          className="glass-nav border border-white/20 w-14 h-14 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg cursor-pointer"
++        >
++          <span className="material-symbols-outlined text-white">
++            {layerMode === "dark" ? "satellite_alt" : "dark_mode"}
++          </span>
++        </button>
++      </div>
++
++      {/* Loading indicator */}
++      {(loading || isGeocoding) && (
++        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#050e1c]/80 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-full flex items-center gap-2" style={{ zIndex: 1000 }}>
++          <span className="material-symbols-outlined text-[#3B6FE8] text-base animate-spin">refresh</span>
++          <span className="font-technical text-xs text-white/70 uppercase tracking-widest">LocatingΓÇª</span>
++        </div>
++      )}
++
++      {/* GPS blocked ΓÇö manual city entry card */}
++      {(geoStatus === "denied" || geoStatus === "unavailable") && (
++        <div
++          className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#0a1422]/95 backdrop-blur-md border border-red-500/20 rounded-2xl shadow-2xl"
++          style={{ zIndex: 1000, pointerEvents: "auto", width: "min(340px, 90%)" }}
++        >
++          {/* Header row */}
++          <div className="flex items-center gap-2 px-4 pt-4 pb-2">
++            <span className="material-symbols-outlined text-red-400 text-base shrink-0">location_off</span>
++            <p className="font-technical text-xs text-red-300 tracking-wide flex-1">GPS blocked ΓÇö enter your city manually</p>
++            <button
++              type="button"
++              onClick={() => { setGeoStatus("idle"); setGeoErrorMsg(""); setManualCity(""); }}
++              className="text-white/30 hover:text-white transition-colors cursor-pointer"
++            >
++              <span className="material-symbols-outlined text-sm">close</span>
++            </button>
++          </div>
++
++          {/* Manual input row */}
++          <div className="flex gap-2 px-4 pb-4">
++            <input
++              type="text"
++              value={manualCity}
++              onChange={e => setManualCity(e.target.value)}
++              onKeyDown={e => {
++                if (e.key === "Enter" && manualCity.trim()) {
++                  setManualLoading(true);
++                  import("@/lib/geocode").then(({ geocodePlace }) =>
++                    geocodePlace(manualCity.trim()).then(result => {
++                      setManualLoading(false);
++                      if (result) {
++                        setCenter([result.lat, result.lng]);
++                        setMapZoom(11);
++                        setFlyToTarget([result.lat, result.lng]);
++                        setGeoLabel(result.displayName.split(",")[0]);
++                        setGeoStatus("success");
++                        if (onLocate) onLocate(manualCity.trim());
++                      } else {
++                        setGeoErrorMsg("City not found. Try a different name.");
++                      }
++                    })
++                  );
++                }
++              }}
++              placeholder="e.g. Mumbai, KolkataΓÇª"
++              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#3B6FE8] transition-colors"
++            />
++            <button
++              type="button"
++              disabled={!manualCity.trim() || manualLoading}
++              onClick={() => {
++                if (!manualCity.trim()) return;
++                setManualLoading(true);
++                import("@/lib/geocode").then(({ geocodePlace }) =>
++                  geocodePlace(manualCity.trim()).then(result => {
++                    setManualLoading(false);
++                    if (result) {
++                      setCenter([result.lat, result.lng]);
++                      setMapZoom(11);
++                      setFlyToTarget([result.lat, result.lng]);
++                      setGeoLabel(result.displayName.split(",")[0]);
++                      setGeoStatus("success");
++                      if (onLocate) onLocate(manualCity.trim());
++                    } else {
++                      setGeoErrorMsg("City not found. Try a different name.");
++                    }
++                  })
++                );
++              }}
++              className="px-4 py-2 bg-[#3B6FE8] hover:bg-[#2d5bc9] disabled:opacity-40 text-white text-sm font-bold rounded-xl transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center gap-1"
++            >
++              {manualLoading
++                ? <span className="material-symbols-outlined text-sm animate-spin">refresh</span>
++                : <span className="material-symbols-outlined text-sm">search</span>}
++            </button>
++          </div>
++
++          {/* Inline error for bad city */}
++          {geoErrorMsg && (
++            <p className="font-technical text-[10px] text-red-400 px-4 pb-3 -mt-2">{geoErrorMsg}</p>
++          )}
++        </div>
++      )}
++
++      {/* Destination badge */}
++      {geoLabel && !loading && !isGeocoding && geoStatus !== "denied" && geoStatus !== "error" && geoStatus !== "unavailable" && geoStatus !== "success" && (
++        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#050e1c]/80 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-full flex items-center gap-2" style={{ zIndex: 1000 }}>
++          <span className="material-symbols-outlined text-[#3B6FE8] text-base">location_on</span>
++          <span className="font-technical text-xs text-white/80 uppercase tracking-widest">{geoLabel}</span>
++        </div>
++      )}
++
++      {/* GPS success badge */}
++      {geoStatus === "success" && (
++        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-[#050e1c]/80 backdrop-blur-sm border border-[#3B6FE8]/40 px-4 py-2 rounded-full flex items-center gap-2" style={{ zIndex: 1000 }}>
++          <span className="material-symbols-outlined text-[#3B6FE8] text-base">my_location</span>
++          <span className="font-technical text-xs text-white/80 uppercase tracking-widest">Live Location Active</span>
++        </div>
++      )}
++
++      {/* Live Tracking card */}
++      <div className="absolute bottom-10 left-10" style={{ zIndex: 1000, pointerEvents: "none" }}>
++        <div className="glass-nav border border-white/20 p-5 rounded-3xl max-w-sm shadow-2xl backdrop-blur-2xl">
++          <p className="font-technical text-[10px] uppercase tracking-widest font-bold text-[#3B6FE8] mb-3">Live Tracking</p>
++          <div className="flex items-center gap-4">
++            <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
++              <span className="material-symbols-outlined text-2xl text-white">directions_bus</span>
++            </div>
++            <div>
++              <p className="font-headline font-bold text-white text-lg">En Route to {destination || "Destination"}</p>
++              <p className="text-white/60 font-medium text-sm mt-1">
++                {geoStatus === "success" ? `From: ${source || "Your Location"}` : "Arrival estimated 08:30 AM"}
++              </p>
++            </div>
++          </div>
++        </div>
++      </div>
++    </section>
++  );
++}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/TimelineTab.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/TimelineTab.tsx"
+index 2c11fcf..2166e7d 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/TimelineTab.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/TimelineTab.tsx"	
+@@ -1,85 +1,251 @@
+-export default function TimelineTab() {
++"use client";
++
++import { useEffect, useState } from "react";
++
++interface JLeg {
++  mode: "flight" | "train" | "taxi" | "bus" | "transit";
++  origin: string;
++  destination: string;
++  duration: string;
++  durationMins: number;
++  price: string;
++  distanceKm: number;
++}
++
++export interface BookedHotel {
++  name: string;
++  address?: string;
++  price?: string;
++  roomType?: string;
++}
++
++interface Props {
++  source?: string;
++  destination?: string;
++  bookedHotel?: BookedHotel | null;
++  routesList?: JLeg[][];
++  activeRouteIdx?: number;
++  setActiveRouteIdx?: (idx: number) => void;
++  loading?: boolean;
++  error?: boolean;
++}
++
++// Mode ΓåÆ visual identity
++const MODE_META: Record<string, { icon: string; color: string; label: string; bgClass: string }> = {
++  flight:  { icon: "flight",            color: "#DF33DF", label: "Flight",  bgClass: "bg-[#DF33DF]" },
++  train:   { icon: "train",             color: "#0EBCDC", label: "Train",   bgClass: "bg-[#0EBCDC]" },
++  bus:     { icon: "directions_bus",    color: "#3B6FE8", label: "Bus",     bgClass: "bg-[#3B6FE8]" },
++  taxi:    { icon: "directions_car",    color: "#EAED41", label: "Taxi",    bgClass: "bg-[#EAED41]" },
++  transit: { icon: "directions_subway", color: "#22C55E", label: "Transit", bgClass: "bg-[#22C55E]" },
++};
++
++// Accumulate departure time from start (21:30 on Day 1)
++function computeTimes(legs: JLeg[]) {
++  let mins = 21 * 60 + 30; // 21:30
++  return legs.map(leg => {
++    const hh = Math.floor(mins / 60) % 24;
++    const mm = mins % 60;
++    const label = `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
++    mins += leg.durationMins + 15; // 15 min buffer between legs
++    return label;
++  });
++}
++
++export default function TimelineTab({ 
++  source = "New Delhi", 
++  destination = "Destination", 
++  bookedHotel,
++  routesList = [],
++  activeRouteIdx = 0,
++  setActiveRouteIdx,
++  loading = false,
++  error = false
++}: Props) {
++  
++  const legs = routesList[activeRouteIdx] || [];
++
++  const times = computeTimes(legs);
++
++  if (loading) {
++    return (
++      <div className="fade-in flex flex-col gap-5">
++        {[1, 2].map(i => (
++          <div key={i} className="animate-pulse bg-[#16202f] rounded-2xl h-28 border border-white/5" />
++        ))}
++      </div>
++    );
++  }
++
++  if (error || legs.length === 0) {
++    return (
++      <div className="fade-in flex flex-col items-center justify-center gap-4 py-16 text-white/40">
++        <span className="material-symbols-outlined text-5xl">route</span>
++        <p className="text-sm font-medium">Could not load route for {source} ΓåÆ {destination}</p>
++        <p className="text-xs">Check your internet connection or try a different source city.</p>
++      </div>
++    );
++  }
++
+   return (
+-    <div className="relative pl-8 fade-in">
+-      {/* Vertical Dashed Line */}
+-      <div className="absolute left-[15px] top-4 bottom-4 w-px bg-[linear-gradient(to_bottom,rgba(255,255,255,0.2)_50%,transparent_50%)] bg-[length:1px_12px]"></div>
+-      
+-      {/* Timeline Item: Bus */}
+-      <div className="relative mb-8 group">
+-        <div className="absolute -left-[28px] top-6 w-5 h-5 rounded-full bg-[#3B6FE8] border-4 border-[#0a1422] z-10 shadow-[0_0_15px_rgba(59,111,232,0.5)]"></div>
+-        <div className="bg-[#16202f] rounded-2xl p-6 flex gap-6 shadow-xl border border-white/5 transition-transform hover:-translate-y-1 hover:border-white/20">
+-          <div className="w-2 bg-[#3B6FE8] rounded-full shadow-[0_0_10px_rgba(59,111,232,0.5)]"></div>
+-          <div className="flex-1 text-white">
+-            <div className="flex justify-between items-start mb-4">
+-              <div>
+-                <div className="flex items-center gap-2 mb-1">
+-                  <span className="material-symbols-outlined text-sm text-[#3B6FE8]">directions_bus</span>
+-                  <span className="font-technical text-[10px] font-bold uppercase tracking-widest text-[#3B6FE8]">Transport</span>
+-                </div>
+-                <h3 className="text-xl font-headline font-bold text-white">Volvo Semi-Sleeper</h3>
+-                <p className="text-sm text-white/60 font-medium">New Delhi ΓåÆ Destination</p>
+-              </div>
+-              <div className="text-right">
+-                <p className="font-bold text-[#EAED41] font-technical">21:30</p>
+-                <p className="text-xs text-white/50 font-technical">Oct 12</p>
+-              </div>
+-            </div>
+-            <div className="flex gap-3">
+-              <button className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-xs font-bold flex items-center gap-2 transition-colors">
+-                <span className="material-symbols-outlined text-base">swap_horiz</span> Swap/Edit
++    <div className="relative pl-8 fade-in mt-4">
++      {/* ΓöÇΓöÇ Alternate Routes Switcher ΓöÇΓöÇ */}
++      {routesList.length > 1 && (
++        <div className="absolute top-0 right-0 -translate-y-12 flex gap-2">
++          {routesList.map((route, idx) => {
++            const mainMode = route.find(l => l.mode === "flight")?.mode 
++                          || route.find(l => l.mode === "train")?.mode 
++                          || "bus";
++            const meta = MODE_META[mainMode];
++            return (
++              <button
++                key={`route-opt-${idx}`}
++                onClick={() => setActiveRouteIdx && setActiveRouteIdx(idx)}
++                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${
++                  activeRouteIdx === idx
++                    ? 'border-[#3B6FE8] text-[#3B6FE8] bg-[#3B6FE8]/10 shadow-[0_0_15px_rgba(59,111,232,0.3)]'
++                    : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white'
++                }`}
++              >
++                <span className="material-symbols-outlined text-[14px]">{meta?.icon}</span>
++                Option {idx + 1}
+               </button>
+-            </div>
+-          </div>
++            );
++          })}
+         </div>
+-      </div>
++      )}
++
++      {/* Vertical dashed line */}
++      <div className="absolute left-[15px] top-4 bottom-4 w-px bg-[linear-gradient(to_bottom,rgba(255,255,255,0.2)_50%,transparent_50%)] bg-[length:1px_12px]" />
+ 
+-      {/* Timeline Item: Hotel */}
+-      <div className="relative mb-8 group">
+-        <div className="absolute -left-[28px] top-6 w-5 h-5 rounded-full bg-[#D30C5C] border-4 border-[#0a1422] z-10 shadow-[0_0_15px_rgba(211,12,92,0.5)]"></div>
+-        <div className="bg-[#16202f] rounded-2xl p-6 flex gap-6 shadow-xl border border-white/5 transition-transform hover:-translate-y-1 hover:border-white/20">
+-          <div className="w-2 bg-[#D30C5C] rounded-full shadow-[0_0_10px_rgba(211,12,92,0.5)]"></div>
+-          <div className="flex-1 text-white">
+-            <div className="flex justify-between items-start mb-4">
+-              <div>
+-                <div className="flex items-center gap-2 mb-1">
+-                  <span className="material-symbols-outlined text-sm text-[#D30C5C]">bed</span>
+-                  <span className="font-technical text-[10px] font-bold uppercase tracking-widest text-[#D30C5C]">Stay</span>
++      {/* ΓöÇΓöÇ Transport legs ΓöÇΓöÇ */}
++      {legs.map((leg, idx) => {
++        const meta = MODE_META[leg.mode] ?? MODE_META.taxi;
++        return (
++          <div className="relative mb-8 group" key={`leg-${idx}`}>
++            {/* Timeline dot */}
++            <div
++              className={`absolute -left-[28px] top-6 w-5 h-5 rounded-full border-4 border-[#0a1422] z-10 ${meta.bgClass}`}
++              style={{ boxShadow: `0 0 14px ${meta.color}60` }}
++            />
++            <div className="bg-[#16202f] rounded-2xl p-6 flex gap-6 shadow-xl border border-white/5 transition-transform hover:-translate-y-1 hover:border-white/20">
++              {/* Color sidebar */}
++              <div className="w-2 rounded-full shrink-0" style={{ background: meta.color, boxShadow: `0 0 10px ${meta.color}50` }} />
++              <div className="flex-1 text-white">
++                <div className="flex justify-between items-start mb-3">
++                  <div>
++                    <div className="flex items-center gap-2 mb-1">
++                      <span className="material-symbols-outlined text-sm" style={{ color: meta.color }}>{meta.icon}</span>
++                      <span className="font-technical text-[10px] font-bold uppercase tracking-widest" style={{ color: meta.color }}>
++                        {meta.label} ┬╖ Leg {idx + 1}
++                      </span>
++                    </div>
++                    <h3 className="text-lg font-headline font-bold text-white leading-tight">
++                      {leg.origin.split(",")[0]} ΓåÆ {leg.destination.split(",")[0]}
++                    </h3>
++                    <p className="text-sm text-white/50 mt-0.5">{leg.distanceKm} km ┬╖ {leg.duration}</p>
++                  </div>
++                  <div className="text-right shrink-0">
++                    <p className="font-bold text-[#EAED41] font-technical">{times[idx]}</p>
++                    <p className="text-xs text-white/50 font-technical mt-0.5">Oct {12 + idx}</p>
++                    <p className="text-sm font-bold text-white mt-1">{leg.price}</p>
++                  </div>
++                </div>
++                {/* Tags */}
++                <div className="flex gap-2 flex-wrap">
++                  {leg.mode === "flight" && (
++                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#DF33DF]/10 text-[#DF33DF] border border-[#DF33DF]/20">Direct Flight</span>
++                  )}
++                  {leg.mode === "bus" && (
++                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3B6FE8]/10 text-[#3B6FE8] border border-[#3B6FE8]/20">AC Sleeper</span>
++                  )}
++                  {leg.mode === "taxi" && (
++                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#EAED41]/10 text-[#EAED41] border border-[#EAED41]/20">Private Cab</span>
++                  )}
++                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 text-white/40 border border-white/10">
++                    {leg.distanceKm} km
++                  </span>
+                 </div>
+-                <h3 className="text-xl font-headline font-bold">The Himalayan Retreat</h3>
+-                <p className="text-sm text-white/60 font-medium">Riverside Location</p>
+-              </div>
+-              <div className="text-right">
+-                <p className="font-bold font-technical">Check-in</p>
+-                <p className="text-xs text-white/50 font-technical">Oct 13, 11:00</p>
+               </div>
+             </div>
+           </div>
+-        </div>
+-      </div>
++        );
++      })}
+ 
+-      {/* Timeline Item: Trek */}
+-      <div className="relative mb-8 group">
+-        <div className="absolute -left-[28px] top-6 w-5 h-5 rounded-full bg-[#B4D104] border-4 border-[#0a1422] z-10 shadow-[0_0_15px_rgba(180,209,4,0.3)]"></div>
+-        <div className="bg-[#16202f] rounded-2xl p-6 flex gap-6 shadow-xl border border-white/5 transition-transform hover:-translate-y-1 hover:border-white/20">
+-          <div className="w-2 bg-[#B4D104] rounded-full"></div>
+-          <div className="flex-1 text-white">
+-            <div className="flex justify-between items-start mb-4">
+-              <div>
+-                <div className="flex items-center gap-2 mb-1">
+-                  <span className="material-symbols-outlined text-sm text-[#B4D104]">hiking</span>
+-                  <span className="font-technical text-[10px] font-bold uppercase tracking-widest text-[#B4D104]">Adventure</span>
++      {/* ΓöÇΓöÇ Hotel (only if user has booked one) ΓöÇΓöÇ */}
++      {bookedHotel ? (
++        <div className="relative mb-8 group">
++          <div className="absolute -left-[28px] top-6 w-5 h-5 rounded-full bg-[#D30C5C] border-4 border-[#0a1422] z-10 shadow-[0_0_15px_rgba(211,12,92,0.5)]" />
++          <div className="bg-[#16202f] rounded-2xl p-6 flex gap-6 shadow-xl border border-white/5 transition-transform hover:-translate-y-1 hover:border-white/20">
++            <div className="w-2 bg-[#D30C5C] rounded-full shadow-[0_0_10px_rgba(211,12,92,0.5)] shrink-0" />
++            <div className="flex-1 text-white">
++              <div className="flex justify-between items-start mb-3">
++                <div>
++                  <div className="flex items-center gap-2 mb-1">
++                    <span className="material-symbols-outlined text-sm text-[#D30C5C]">bed</span>
++                    <span className="font-technical text-[10px] font-bold uppercase tracking-widest text-[#D30C5C]">Stay</span>
++                  </div>
++                  <h3 className="text-lg font-headline font-bold text-white">{bookedHotel.name}</h3>
++                  {bookedHotel.roomType && (
++                    <p className="text-sm text-white/50 mt-0.5">{bookedHotel.roomType}</p>
++                  )}
++                  {bookedHotel.address && (
++                    <p className="text-xs text-white/40 mt-0.5">{bookedHotel.address}</p>
++                  )}
++                </div>
++                <div className="text-right shrink-0">
++                  <p className="font-bold font-technical text-white">Check-in</p>
++                  <p className="text-xs text-white/50 font-technical mt-0.5">Oct 13, 11:00</p>
++                  {bookedHotel.price && (
++                    <p className="text-sm font-bold text-[#EAED41] mt-1">{bookedHotel.price}</p>
++                  )}
+                 </div>
+-                <h3 className="text-xl font-headline font-bold">Basecamp Trek</h3>
+-                <p className="text-sm text-white/60 font-medium">Valley to Summit</p>
+-              </div>
+-              <div className="text-right">
+-                <p className="font-bold font-technical text-[#EAED41]">06:00</p>
+-                <p className="text-xs text-white/50 font-technical">Oct 15</p>
+               </div>
++              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
++                Γ£ô Reserved
++              </span>
+             </div>
+           </div>
+         </div>
++      ) : (
++        /* Prompt for hotel booking */
++        <div className="relative mb-8">
++          <div className="absolute -left-[28px] top-6 w-5 h-5 rounded-full bg-white/10 border-4 border-[#0a1422] z-10 border-dashed border-white/30" />
++          <div className="bg-[#16202f]/50 rounded-2xl p-5 border border-dashed border-white/10 flex items-center gap-4">
++            <span className="material-symbols-outlined text-white/30 text-3xl">bed</span>
++            <div>
++              <p className="text-sm font-bold text-white/40">No hotel selected</p>
++              <p className="text-xs text-white/25 mt-0.5">Go to Hotels tab ΓåÆ Reserve a room to add it here</p>
++            </div>
++          </div>
++        </div>
++      )}
++
++      {/* ΓöÇΓöÇ Arrival ΓöÇΓöÇ */}
++      <div className="relative mb-4">
++        <div className="absolute -left-[28px] top-3 w-5 h-5 rounded-full bg-emerald-500 border-4 border-[#0a1422] z-10 shadow-[0_0_14px_rgba(34,197,94,0.5)]" />
++        <div className="bg-[#16202f] rounded-2xl p-5 flex items-center gap-4 shadow-xl border border-emerald-500/10">
++          <span className="material-symbols-outlined text-emerald-400 text-2xl">flag</span>
++          <div>
++            <p className="font-technical text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-0.5">Arrival</p>
++            <p className="font-headline font-bold text-white text-lg">{destination}</p>
++          </div>
++          <div className="ml-auto text-right">
++            <p className="font-technical font-bold text-emerald-400">
++              {/* Total journey time */}
++              {formatDuration(legs.reduce((s, l) => s + l.durationMins, 0))} total
++            </p>
++            <p className="text-xs text-white/50 font-technical mt-0.5">Oct {12 + legs.length}</p>
++          </div>
++        </div>
+       </div>
+     </div>
+   );
+ }
++
++function formatDuration(mins: number) {
++  const h = Math.floor(mins / 60);
++  const m = Math.floor(mins % 60);
++  if (h === 0) return `${m}m`;
++  if (m === 0) return `${h}h`;
++  return `${h}h ${m}m`;
++}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/VehiclesTab.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/VehiclesTab.tsx"
+index cfa88c9..eebba25 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/_components/VehiclesTab.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/_components/VehiclesTab.tsx"	
+@@ -1,28 +1,152 @@
+-import { PLAN_VEHICLES } from "@/lib/data";
++"use client";
++
++import { useEffect, useState } from "react";
++import { JourneyLeg } from "@/app/api/routes/route"; // Need to export JourneyLeg from route.ts, I'll do that or just redefine
++
++interface Props {
++  source?: string;
++  destination?: string;
++}
++
++interface JLeg {
++  mode: "flight" | "train" | "taxi" | "bus" | "transit";
++  origin: string;
++  destination: string;
++  duration: string;
++  durationMins: number;
++  price: string;
++  distanceKm: number;
++  path: [number, number][];
++}
++
++const MODE_ICONS: Record<string, string> = {
++  flight: "flight",
++  train: "train",
++  taxi: "directions_car",
++  bus: "directions_bus",
++  transit: "directions_subway"
++};
++
++const MODE_COLORS: Record<string, string> = {
++  flight: "#DF33DF",
++  train: "#0EBCDC",
++  taxi: "#EAED41",
++  bus: "#3B6FE8",
++  transit: "#22C55E"
++};
++
++export default function VehiclesTab({ source = "New Delhi", destination = "Destination" }: Props) {
++  const [legs, setLegs] = useState<JLeg[]>([]);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    async function fetchRoutes() {
++      setLoading(true);
++      setError(null);
++      try {
++        const res = await fetch(`/api/routes?source=${encodeURIComponent(source)}&dest=${encodeURIComponent(destination)}`);
++        const data = await res.json();
++        
++        if (data.error) {
++          setError(data.error);
++        } else if (data.legs) {
++          setLegs(data.legs);
++        }
++      } catch (err: any) {
++        setError(err.message || "Failed to fetch routes");
++      } finally {
++        setLoading(false);
++      }
++    }
++
++    if (source && destination) {
++      fetchRoutes();
++    }
++  }, [source, destination]);
++
++  if (loading) {
++    return (
++      <div className="fade-in flex flex-col gap-6 items-center justify-center py-12">
++        <div className="w-8 h-8 border-4 border-white/10 border-t-[#3B6FE8] rounded-full animate-spin"></div>
++        <p className="text-white/50 font-technical text-sm tracking-widest uppercase">Calculating best route...</p>
++      </div>
++    );
++  }
++
++  if (error || legs.length === 0) {
++    return (
++      <div className="fade-in flex flex-col gap-6 items-center justify-center py-12 text-center text-white/50">
++        <span className="material-symbols-outlined text-4xl mb-2 text-[#EAED41]">warning</span>
++        <p>Could not find transport routes between {source} and {destination}.</p>
++        {error && <p className="text-xs mt-2 opacity-50">{error}</p>}
++      </div>
++    );
++  }
++
++  const totalTimeMins = legs.reduce((acc, leg) => acc + leg.durationMins, 0);
++  const totalHours = Math.floor(totalTimeMins / 60);
++  const totalMins = Math.round(totalTimeMins % 60);
++  const timeStr = totalHours > 0 ? `${totalHours}h ${totalMins > 0 ? totalMins + 'm' : ''}` : `${totalMins}m`;
+ 
+-export default function VehiclesTab() {
+   return (
+-    <div className="fade-in flex flex-col gap-6">
+-      <h2 className="text-2xl font-headline font-bold border-b border-white/10 pb-4 flex items-center gap-3">
+-         <span className="material-symbols-outlined text-[#3B6FE8]">directions_bus</span>
+-         Transport Options
+-      </h2>
+-      {PLAN_VEHICLES.map(v => (
+-        <div key={v.id} className="bg-[#16202f] rounded-2xl p-6 flex justify-between shadow-xl border border-white/5 items-center">
+-            <div className="flex-1">
+-                <span className="font-technical text-[10px] text-[#3B6FE8] uppercase tracking-widest">{v.route}</span>
+-                <h3 className="text-xl font-headline font-bold mt-1">{v.type}</h3>
+-                <div className="flex items-center gap-4 mt-2 text-white/50 text-sm font-technical">
+-                    <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">schedule</span> {v.dep}</span>
+-                    <span className="flex items-center gap-1"><span className="material-symbols-outlined text-sm">timelapse</span> {v.duration}</span>
++    <div className="fade-in flex flex-col gap-6 relative">
++      <div className="flex items-end justify-between border-b border-white/10 pb-4">
++        <h2 className="text-2xl font-headline font-bold flex items-center gap-3">
++          <span className="material-symbols-outlined text-[#3B6FE8]">route</span>
++          Journey Breakdown
++        </h2>
++        <div className="text-right">
++          <p className="text-white/50 font-technical text-xs uppercase tracking-wider mb-1">Total Est. Time</p>
++          <p className="text-[#0DF5E3] font-headline font-bold">{timeStr}</p>
++        </div>
++      </div>
++
++      <div className="relative pl-6">
++        {/* Timeline connector line */}
++        <div className="absolute left-10 top-6 bottom-6 w-0.5 bg-white/10"></div>
++
++        <div className="flex flex-col gap-6">
++          {legs.map((leg, idx) => (
++            <div key={idx} className="relative bg-[#16202f] rounded-2xl p-5 flex flex-col sm:flex-row shadow-xl border border-white/5 ml-8 group hover:border-white/20 transition-all">
++              
++              {/* Timeline dot & icon */}
++              <div 
++                className="absolute -left-12 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center z-10 shadow-lg shadow-black/50"
++                style={{ backgroundColor: MODE_COLORS[leg.mode] || "#3B6FE8" }}
++              >
++                <span className="material-symbols-outlined text-black text-sm">{MODE_ICONS[leg.mode] || "directions_bus"}</span>
++              </div>
++
++              <div className="flex-1 border-b sm:border-b-0 sm:border-r border-white/10 pb-4 sm:pb-0 sm:pr-6 mb-4 sm:mb-0">
++                <span className="font-technical text-[10px] uppercase tracking-widest text-[#0DF5E3] block mb-1">Leg {idx + 1} ΓÇó {leg.mode.toUpperCase()}</span>
++                <div className="flex items-center gap-3">
++                  <h3 className="text-lg font-headline font-semibold">{leg.origin.split(',')[0]}</h3>
++                  <span className="material-symbols-outlined text-white/30 text-sm">trending_flat</span>
++                  <h3 className="text-lg font-headline font-semibold">{leg.destination.split(',')[0]}</h3>
+                 </div>
++                
++                <p className="text-white/40 text-xs mt-2 line-clamp-1" title={`${leg.origin} to ${leg.destination}`}>
++                  {leg.origin} ΓåÆ {leg.destination}
++                </p>
++              </div>
++
++              <div className="sm:pl-6 flex flex-row sm:flex-col justify-between items-center sm:items-end sm:justify-center min-w-[120px]">
++                <div className="text-left sm:text-right">
++                  <p className="font-technical text-xs text-white/50 mb-1 flex items-center sm:justify-end gap-1">
++                    <span className="material-symbols-outlined text-[14px]">timelapse</span>
++                    {leg.duration} ({leg.distanceKm} km)
++                  </p>
++                  <p className="font-headline font-bold text-xl" style={{ color: MODE_COLORS[leg.mode] || "#3B6FE8" }}>
++                    {leg.price}
++                  </p>
++                </div>
++              </div>
++
+             </div>
+-            <div className="text-right">
+-                <p className="font-headline font-bold text-xl mb-3">{v.price}</p>
+-                <button className="bg-[#3B6FE8] text-white px-5 py-2 rounded-full text-xs font-bold hover:opacity-90 transition shadow-lg shadow-[#3B6FE8]/20">Select</button>
+-            </div>
++          ))}
+         </div>
+-      ))}
++      </div>
+     </div>
+   );
+ }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/page.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/page.tsx"
+index 059bc86..e4ea95a 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/plan/page.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/app/plan/page.tsx"	
+@@ -4,11 +4,12 @@ import { useState, useEffect, Suspense } from "react";
+ import Link from "next/link";
+ import { useSearchParams } from "next/navigation";
+ import Sidebar from "./_components/Sidebar";
+-import TimelineTab from "./_components/TimelineTab";
++import TimelineTab, { BookedHotel } from "./_components/TimelineTab";
+ import HotelsTab from "./_components/HotelsTab";
+ import VehiclesTab from "./_components/VehiclesTab";
+ import GuidesTab from "./_components/GuidesTab";
+ import PlanMap from "./_components/PlanMap";
++import { JourneyLeg } from "@/app/api/routes/route";
+ 
+ export default function PlanTrip() {
+   return (
+@@ -22,20 +23,65 @@ export default function PlanTrip() {
+ function PlanTripContent() {
+   const searchParams = useSearchParams();
+   const destParam = searchParams.get("dest");
++  const sourceParam = searchParams.get("source");
+   const tabParam = searchParams.get("tab") as 'timeline' | 'hotels' | 'vehicles' | 'guides' | null;
+   const [activeTab, setActiveTab] = useState<'timeline' | 'hotels' | 'vehicles' | 'guides'>(
+     tabParam || 'timeline'
+   );
+   const [budgetSpent, setBudgetSpent] = useState(0);
+ 
++  // sourceTitle: starts from URL param, can be overridden by GPS
++  const [sourceTitle, setSourceTitle] = useState<string>(sourceParam || "New Delhi");
++  const [isGpsSource, setIsGpsSource] = useState(false);
++
++  // bookedHotel: set when user reserves a room in HotelsTab ΓåÆ appears in TimelineTab
++  const [bookedHotel, setBookedHotel] = useState<BookedHotel | null>(null);
++
++  // Routing state
++  const destinationTitle = destParam ? destParam : "Manali";
++  const [routesList, setRoutesList] = useState<JourneyLeg[][]>([]);
++  const [activeRouteIdx, setActiveRouteIdx] = useState(0);
++  const [routesLoading, setRoutesLoading] = useState(false);
++  const [routesError, setRoutesError] = useState(false);
++
+   useEffect(() => {
+     if (tabParam) {
+       setActiveTab(tabParam);
+     }
+   }, [tabParam]);
+-  
+-  // Dynamic Title Logic
+-  const destinationTitle = destParam ? destParam : "Manali";
++
++  // Fetch routes when source or destination changes
++  useEffect(() => {
++    if (!sourceTitle || !destinationTitle) return;
++    let cancelled = false;
++    setRoutesLoading(true);
++    setRoutesError(false);
++    setRoutesList([]);
++    setActiveRouteIdx(0);
++
++    fetch(`/api/routes?source=${encodeURIComponent(sourceTitle)}&dest=${encodeURIComponent(destinationTitle)}`)
++      .then(res => res.json())
++      .then(data => {
++        if (cancelled) return;
++        if (data.routes && data.routes.length > 0) {
++          setRoutesList(data.routes);
++        } else {
++          setRoutesError(true);
++        }
++        setRoutesLoading(false);
++      })
++      .catch(() => {
++        if (!cancelled) { setRoutesError(true); setRoutesLoading(false); }
++      });
++
++    return () => { cancelled = true; };
++  }, [sourceTitle, destinationTitle]);
++
++  // When GPS fires from the map, update the source shown everywhere
++  const handleLocate = (cityName: string) => {
++    setSourceTitle(cityName);
++    setIsGpsSource(true);
++  };
+ 
+   return (
+     <div className="bg-[#050e1c] text-white font-body overflow-hidden h-screen flex flex-col">
+@@ -70,7 +116,25 @@ function PlanTripContent() {
+             <div className="flex justify-between items-end">
+               <div>
+                 <h1 className="text-5xl font-headline font-black tracking-tighter mb-2 text-white">Trip to {destinationTitle}</h1>
+-                <p className="text-white/60 text-lg font-medium">Oct 12 ΓÇö Oct 18, 2026 ΓÇó 6 Days</p>
++                <div className="flex items-center gap-3 mt-2">
++                  <p className="text-white/60 text-lg font-medium">Oct 12 ΓÇö Oct 18, 2026 ΓÇó 6 Days</p>
++                  {/* GPS Source Badge */}
++                  {isGpsSource ? (
++                    <div className="flex items-center gap-1.5 bg-[#3B6FE8]/15 border border-[#3B6FE8]/40 px-3 py-1 rounded-full">
++                      <span className="material-symbols-outlined text-[#3B6FE8] text-sm">my_location</span>
++                      <span className="font-technical text-[10px] text-[#3B6FE8] uppercase tracking-widest font-bold">
++                        From: {sourceTitle}
++                      </span>
++                    </div>
++                  ) : (
++                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1 rounded-full">
++                      <span className="material-symbols-outlined text-white/40 text-sm">near_me</span>
++                      <span className="font-technical text-[10px] text-white/40 uppercase tracking-widest">
++                        From: {sourceTitle}
++                      </span>
++                    </div>
++                  )}
++                </div>
+               </div>
+               <div className="text-right">
+                 <span className="font-technical text-[10px] text-white/50 block uppercase tracking-widest mb-1">Booked Amount</span>
+@@ -80,15 +144,32 @@ function PlanTripContent() {
+           </header>
+ 
+           {/* DYNAMIC CONTENT SWITCHER */}
+-          {activeTab === 'timeline' && <TimelineTab />}
+-          {activeTab === 'hotels' && <HotelsTab destination={destinationTitle} onBookItem={(price: number) => setBudgetSpent(p => p + price)} />}
+-          {activeTab === 'vehicles' && <VehiclesTab />}
+-          {activeTab === 'guides' && <GuidesTab />}
++          {activeTab === 'timeline'  && <TimelineTab 
++            source={sourceTitle} 
++            destination={destinationTitle} 
++            bookedHotel={bookedHotel}
++            routesList={routesList}
++            activeRouteIdx={activeRouteIdx}
++            setActiveRouteIdx={setActiveRouteIdx}
++            loading={routesLoading}
++            error={routesError}
++          />}
++          {activeTab === 'hotels'    && <HotelsTab destination={destinationTitle} onBookItem={(price: number) => setBudgetSpent(p => p + price)} onHotelSelect={setBookedHotel} />}
++          {activeTab === 'vehicles'  && <VehiclesTab source={sourceTitle} destination={destinationTitle} />}
++          {activeTab === 'guides'    && <GuidesTab destination={destinationTitle} />}
+         </section>
+ 
+         {/* Right Section: Map View */}
+-        <PlanMap />
++        <PlanMap 
++          source={sourceTitle} 
++          destination={destinationTitle} 
++          onLocate={handleLocate} 
++          routesList={routesList}
++          activeRouteIdx={activeRouteIdx}
++          loading={routesLoading}
++        />
+       </main>
+     </div>
+   );
+ }
++
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/profile/page.tsx" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/profile/page.tsx"
+deleted file mode 100644
+index d91b38e..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/app/profile/page.tsx"	
++++ /dev/null
+@@ -1,260 +0,0 @@
+-"use client";
+-
+-import { useSession, signOut } from "next-auth/react";
+-import { useState, useRef } from "react";
+-import { useRouter } from "next/navigation";
+-import Link from "next/link";
+-import Navigation from "@/components/Navigation";
+-import DeleteAccountModal from "@/components/DeleteAccountModal";
+-
+-export default function ProfilePage() {
+-  const { data: session, update, status } = useSession();
+-  const router = useRouter();
+-
+-  const [editingUsername, setEditingUsername] = useState(false);
+-  const [newUsername, setNewUsername] = useState("");
+-  const [imageUrl, setImageUrl] = useState("");
+-  const [editingImage, setEditingImage] = useState(false);
+-  const [saveLoading, setSaveLoading] = useState(false);
+-  const [saveError, setSaveError] = useState("");
+-  const [saveSuccess, setSaveSuccess] = useState("");
+-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+-
+-  if (status === "unauthenticated") {
+-    router.push("/login");
+-    return null;
+-  }
+-
+-  if (status === "loading") {
+-    return (
+-      <div className="h-screen bg-[#050e1c] flex items-center justify-center">
+-        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+-      </div>
+-    );
+-  }
+-
+-  // @ts-ignore
+-  const username = session?.user?.username || session?.user?.name || "Traveller";
+-  const email    = session?.user?.email || "";
+-  const image    = session?.user?.image || "";
+-  // @ts-ignore
+-  const role     = session?.user?.role || "user";
+-  const getInitial = () => username.charAt(0).toUpperCase();
+-
+-  const handleSaveProfile = async () => {
+-    setSaveLoading(true);
+-    setSaveError("");
+-    setSaveSuccess("");
+-
+-    const payload: Record<string, string> = {};
+-    if (editingUsername && newUsername) payload.username = newUsername;
+-    if (editingImage && imageUrl)       payload.image    = imageUrl;
+-
+-    if (Object.keys(payload).length === 0) { setSaveLoading(false); return; }
+-
+-    try {
+-      const res  = await fetch("/api/user/update", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+-      const data = await res.json();
+-      if (!res.ok) {
+-        setSaveError(data.error || "Failed to update profile");
+-      } else {
+-        if (payload.username) await update({ username: payload.username });
+-        setSaveSuccess("Profile updated successfully!");
+-        setEditingUsername(false); setEditingImage(false); setNewUsername(""); setImageUrl("");
+-        setTimeout(() => setSaveSuccess(""), 3000);
+-      }
+-    } catch { setSaveError("An unexpected error occurred."); }
+-    finally   { setSaveLoading(false); }
+-  };
+-
+-  return (
+-    <>
+-      <Navigation />
+-      {showDeleteModal && <DeleteAccountModal onClose={() => setShowDeleteModal(false)} />}
+-
+-      <div className="min-h-screen bg-[#050e1c] pt-32 pb-20 px-6">
+-        <div className="max-w-3xl mx-auto flex flex-col gap-8">
+-
+-          {/* ΓöÇΓöÇ Profile Header Card ΓöÇΓöÇ */}
+-          <div className="glass-nav rounded-[2.5rem] p-8 relative overflow-hidden shadow-2xl border border-white/10">
+-            {/* Top accent banner */}
+-            <div className="absolute top-0 left-0 right-0 h-36 pointer-events-none rounded-t-[2.5rem] overflow-hidden">
+-              <div className="w-full h-full bg-gradient-to-br from-[#D30C5C]/20 to-[#DF33DF]/10" />
+-            </div>
+-
+-            <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
+-              {/* Avatar */}
+-              <div className="relative shrink-0">
+-                {image ? (
+-                  <img
+-                    src={image}
+-                    alt="Profile"
+-                    className="w-24 h-24 rounded-full object-cover shadow-2xl border-4 border-white/20"
+-                  />
+-                ) : (
+-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#D30C5C] to-[#DF33DF] flex items-center justify-center text-white font-headline font-black text-4xl shadow-2xl border-4 border-white/20">
+-                    {getInitial()}
+-                  </div>
+-                )}
+-                <button
+-                  onClick={() => { setEditingImage(!editingImage); setSaveError(""); }}
+-                  className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#EAED41] flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+-                  title="Change Photo"
+-                >
+-                  <span className="material-symbols-outlined text-[14px] text-[#050e1c]">edit</span>
+-                </button>
+-              </div>
+-
+-              {/* Info */}
+-              <div className="flex-1 text-center sm:text-left">
+-                <div className="flex items-center justify-center sm:justify-start gap-3 flex-wrap">
+-                  <h1 className="font-headline font-black text-3xl text-white">{username}</h1>
+-                  {role === "admin" && (
+-                    <span className="text-[10px] font-bold uppercase tracking-widest bg-[#D30C5C]/60 text-white px-2 py-0.5 rounded-full">Admin</span>
+-                  )}
+-                </div>
+-                <p className="text-white/50 text-sm mt-1 font-medium">{email}</p>
+-                <p className="text-white/30 text-xs mt-2 font-technical uppercase tracking-widest">
+-                  Member since {new Date(session?.user as any).getFullYear?.() ?? "2024"}
+-                </p>
+-              </div>
+-
+-              {/* Edit Username Button */}
+-              <button
+-                onClick={() => { setEditingUsername(!editingUsername); setSaveError(""); }}
+-                className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white text-sm font-headline transition-colors hover:bg-white/10"
+-              >
+-                <span className="material-symbols-outlined text-base">edit</span>
+-                Edit Profile
+-              </button>
+-            </div>
+-
+-            {/* ΓöÇΓöÇ Inline Edit Forms ΓöÇΓöÇ */}
+-            {(editingUsername || editingImage) && (
+-              <div className="mt-6 pt-6 border-t border-white/10 flex flex-col gap-4">
+-                {editingUsername && (
+-                  <div className="flex flex-col gap-1.5">
+-                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#EAED41]">New Username</label>
+-                    <div className="relative">
+-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">alternate_email</span>
+-                      <input
+-                        type="text"
+-                        placeholder="e.g. explorer_abhi"
+-                        value={newUsername}
+-                        onChange={(e) => setNewUsername(e.target.value)}
+-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#EAED41]/30 transition-all placeholder:text-white/20"
+-                      />
+-                    </div>
+-                  </div>
+-                )}
+-                {editingImage && (
+-                  <div className="flex flex-col gap-1.5">
+-                    <label className="text-[10px] uppercase tracking-widest font-bold text-[#EAED41]">Profile Image URL</label>
+-                    <div className="relative">
+-                      <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-lg">image</span>
+-                      <input
+-                        type="url"
+-                        placeholder="https://..."
+-                        value={imageUrl}
+-                        onChange={(e) => setImageUrl(e.target.value)}
+-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#EAED41]/30 transition-all placeholder:text-white/20"
+-                      />
+-                    </div>
+-                    {imageUrl && (
+-                      <img src={imageUrl} alt="Preview" className="w-12 h-12 rounded-full object-cover mt-1 border border-white/10" onError={(e) => (e.currentTarget.style.display = "none")} />
+-                    )}
+-                  </div>
+-                )}
+-
+-                {saveError   && <p className="text-red-400 text-xs font-medium">{saveError}</p>}
+-                {saveSuccess && <p className="text-green-400 text-xs font-medium">{saveSuccess}</p>}
+-
+-                <button
+-                  onClick={handleSaveProfile}
+-                  disabled={saveLoading}
+-                  className="self-start flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-headline font-bold rounded-full text-sm transition-all hover:opacity-90 disabled:opacity-50"
+-                >
+-                  {saveLoading ? (
+-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+-                  ) : (
+-                    <><span className="material-symbols-outlined text-base">save</span>Save Changes</>
+-                  )}
+-                </button>
+-              </div>
+-            )}
+-          </div>
+-
+-          {/* ΓöÇΓöÇ Stats Row ΓöÇΓöÇ */}
+-          <div className="grid grid-cols-3 gap-4">
+-            {[
+-              { icon: "flight_takeoff", label: "Trips Planned",  value: "ΓÇö" },
+-              { icon: "location_on",    label: "Destinations",   value: "ΓÇö" },
+-              { icon: "star",           label: "Member Tier",    value: role === "admin" ? "Admin" : "Explorer" },
+-            ].map((stat) => (
+-              <div
+-                key={stat.label}
+-                className="glass-nav rounded-2xl p-5 flex flex-col items-center gap-2 text-center border border-white/10"
+-              >
+-                <span className="material-symbols-outlined text-xl text-[#EAED41]">{stat.icon}</span>
+-                <span className="font-headline font-black text-2xl text-white">{stat.value}</span>
+-                <span className="text-[10px] uppercase tracking-widest font-bold text-white/40">{stat.label}</span>
+-              </div>
+-            ))}
+-          </div>
+-
+-          {/* ΓöÇΓöÇ Trip History ΓöÇΓöÇ */}
+-          <div className="glass-nav rounded-[2rem] p-8 border border-white/10">
+-            <h2 className="font-headline font-bold text-xl text-white mb-6 flex items-center gap-3">
+-              <span className="material-symbols-outlined text-[#EAED41]">luggage</span>
+-              Trip History
+-            </h2>
+-            <div className="flex flex-col items-center justify-center py-14 gap-4 rounded-2xl border border-dashed border-white/10">
+-              <span className="material-symbols-outlined text-5xl text-white/20">map</span>
+-              <p className="text-sm font-medium text-white/40 text-center max-w-xs">
+-                Your planned adventures will appear here. Start exploring and plan your first trip!
+-              </p>
+-              <Link
+-                href="/destinations"
+-                className="mt-2 px-6 py-2.5 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-headline font-bold rounded-full text-sm transition-all hover:opacity-90 flex items-center gap-2"
+-              >
+-                <span className="material-symbols-outlined text-base">explore</span>
+-                Explore Destinations
+-              </Link>
+-            </div>
+-          </div>
+-
+-          {/* ΓöÇΓöÇ Account Management ΓöÇΓöÇ */}
+-          <div className="glass-nav rounded-[2rem] p-8 flex flex-col gap-4 border border-white/10">
+-            <h2 className="font-headline font-bold text-xl text-white flex items-center gap-3">
+-              <span className="material-symbols-outlined text-white/50">manage_accounts</span>
+-              Account
+-            </h2>
+-
+-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+-              <button
+-                onClick={() => signOut({ callbackUrl: "/login" })}
+-                className="flex-1 flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-headline font-bold transition-all hover:bg-white/10"
+-              >
+-                <span className="material-symbols-outlined text-base">logout</span>
+-                Log Out
+-              </button>
+-
+-              <button
+-                onClick={() => setShowDeleteModal(true)}
+-                className="flex-1 flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-headline font-bold transition-all hover:bg-red-500/20"
+-              >
+-                <span className="material-symbols-outlined text-base">delete_forever</span>
+-                Delete Account
+-              </button>
+-            </div>
+-
+-            <p className="text-white/25 text-xs font-medium pt-2 border-t border-white/10">
+-              Deleting your account is permanent. All data associated with this account will be erased and cannot be recovered.
+-            </p>
+-          </div>
+-
+-        </div>
+-      </div>
+-    </>
+-  );
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/DeleteAccountModal.tsx" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/DeleteAccountModal.tsx"
+deleted file mode 100644
+index 94edcdb..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/DeleteAccountModal.tsx"	
++++ /dev/null
+@@ -1,98 +0,0 @@
+-"use client";
+-
+-import { signOut } from "next-auth/react";
+-import { useRouter } from "next/navigation";
+-import { useState } from "react";
+-
+-interface Props {
+-  onClose: () => void;
+-}
+-
+-export default function DeleteAccountModal({ onClose }: Props) {
+-  const [isDeleting, setIsDeleting] = useState(false);
+-  const router = useRouter();
+-
+-  const handleDelete = async () => {
+-    setIsDeleting(true);
+-    try {
+-      const res = await fetch("/api/user/delete", { method: "DELETE" });
+-      if (res.ok) {
+-        await signOut({ redirect: false });
+-        router.push("/login");
+-      }
+-    } catch (err) {
+-      console.error("Failed to delete account:", err);
+-    } finally {
+-      setIsDeleting(false);
+-    }
+-  };
+-
+-  return (
+-    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+-      {/* Backdrop */}
+-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+-
+-      {/* Modal Card */}
+-      <div className="relative z-10 w-full max-w-md glass-nav rounded-[2rem] p-8 border border-red-500/30 overflow-hidden shadow-2xl shadow-[#D30C5C]/20">
+-        {/* Glowing danger line */}
+-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-red-500 to-transparent" />
+-
+-        <div className="flex flex-col gap-6">
+-          {/* Icon & Heading */}
+-          <div className="flex flex-col items-center gap-3 text-center">
+-            <div className="w-16 h-16 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+-              <span className="material-symbols-outlined text-3xl text-red-500">warning</span>
+-            </div>
+-            <h2 className="font-headline font-bold text-2xl text-white">Delete Account?</h2>
+-            <p className="text-white/60 text-sm leading-relaxed">
+-              This action is <span className="text-red-400 font-bold">permanent and irreversible</span>. All your profile data will be wiped from our database forever.
+-            </p>
+-          </div>
+-
+-          {/* Suggestion box */}
+-          <div className="bg-[#EAED41]/10 border border-[#EAED41]/25 rounded-2xl p-4 flex items-start gap-3">
+-            <span className="material-symbols-outlined text-[#EAED41] text-xl shrink-0 mt-0.5">lightbulb</span>
+-            <div>
+-              <p className="text-[10px] text-[#EAED41] font-bold uppercase tracking-wider mb-1">Suggestion</p>
+-              <p className="text-white/70 text-sm">
+-                If you're just taking a break, consider{" "}
+-                <button
+-                  onClick={() => signOut({ callbackUrl: "/" })}
+-                  className="text-[#EAED41] font-bold underline underline-offset-2 hover:opacity-80 transition-opacity"
+-                >
+-                  logging out
+-                </button>{" "}
+-                instead. Your data will be safe when you return.
+-              </p>
+-            </div>
+-          </div>
+-
+-          {/* Action Buttons */}
+-          <div className="flex flex-col gap-3 pt-2">
+-            <button
+-              onClick={handleDelete}
+-              disabled={isDeleting}
+-              className="w-full h-12 bg-red-500/90 hover:bg-red-500 text-white font-headline font-bold rounded-2xl text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-red-500/20"
+-            >
+-              {isDeleting ? (
+-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+-              ) : (
+-                <>
+-                  <span className="material-symbols-outlined text-base">delete_forever</span>
+-                  Yes, Delete My Account
+-                </>
+-              )}
+-            </button>
+-            <button
+-              onClick={onClose}
+-              disabled={isDeleting}
+-              className="w-full h-12 bg-white/5 border border-white/10 text-white/80 font-headline font-bold rounded-2xl text-sm transition-all active:scale-[0.98] hover:bg-white/10"
+-            >
+-              Cancel ΓÇö Keep My Account
+-            </button>
+-          </div>
+-        </div>
+-      </div>
+-    </div>
+-  );
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/DestinationAutocomplete.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/components/DestinationAutocomplete.tsx"
+index 1ef9be4..12c0c0c 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/DestinationAutocomplete.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/components/DestinationAutocomplete.tsx"	
+@@ -16,9 +16,11 @@ interface Props {
+   value: string;
+   onChange: (value: string) => void;
+   onSelect: (suggestion: Suggestion) => void;
++  label?: string;
++  placeholder?: string;
+ }
+ 
+-export default function DestinationAutocomplete({ value, onChange, onSelect }: Props) {
++export default function DestinationAutocomplete({ value, onChange, onSelect, label = "Destination", placeholder = "Where to?" }: Props) {
+   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+   const [isOpen, setIsOpen] = useState(false);
+   const [highlightIndex, setHighlightIndex] = useState(-1);
+@@ -86,11 +88,11 @@ export default function DestinationAutocomplete({ value, onChange, onSelect }: P
+   return (
+     <div ref={containerRef} className="relative flex flex-col">
+       <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">
+-        Destination
++        {label}
+       </span>
+       <input
+         type="text"
+-        placeholder="Where to?"
++        placeholder={placeholder}
+         value={value}
+         onChange={(e) => {
+           onChange(e.target.value);
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/Navigation.tsx" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/components/Navigation.tsx"
+index 1e46e26..5616e5d 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/Navigation.tsx"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/components/Navigation.tsx"	
+@@ -1,139 +1,22 @@
+-"use client";
+-
+-import Link from "next/link";
+-import { useSession } from "next-auth/react";
+-import { usePathname } from "next/navigation";
+-import { useState } from "react";
++import Link from 'next/link';
+ 
+ export default function Navigation() {
+-  const { data: session, status } = useSession();
+-  const pathname = usePathname();
+-  const [menuOpen, setMenuOpen] = useState(false);
+-
+-  // @ts-ignore
+-  const username = session?.user?.username || session?.user?.name || "Traveller";
+-  const image = session?.user?.image || "";
+-  const getInitial = () => username.charAt(0).toUpperCase();
+-
+-  const navLinks = [
+-    { href: "/destinations", label: "Destinations" },
+-    { href: "/experiences",  label: "Experiences"  },
+-    { href: "/journal",      label: "Journal"       },
+-    { href: "/about",        label: "About"         },
+-  ];
+-
+   return (
+     <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[92%] z-50 glass-nav rounded-full px-8 py-3 flex items-center justify-between shadow-2xl shadow-[#D30C5C]/10 border border-white/10 text-white transition-colors duration-300">
+-      {/* Logo */}
+       <div className="flex items-center gap-3">
+-        <span
+-          className="material-symbols-outlined text-[#EAED41] drop-shadow-md"
+-          style={{ fontVariationSettings: "'FILL' 1" }}
+-        >
+-          explore
+-        </span>
+-        <Link href="/" className="font-headline font-black text-xl tracking-tight drop-shadow-sm">
+-          TravelFlow
+-        </Link>
++        <span className="material-symbols-outlined text-[#EAED41] drop-shadow-md" style={{ fontVariationSettings: "'FILL' 1" }}>explore</span>
++        <Link href="/" className="font-headline font-black text-xl tracking-tight drop-shadow-sm">TravelFlow</Link>
+       </div>
+-
+-      {/* Desktop Nav Links */}
+       <div className="hidden md:flex items-center gap-10">
+-        {navLinks.map(({ href, label }) => (
+-          <Link
+-            key={href}
+-            href={href}
+-            className={`text-sm font-medium transition-colors drop-shadow-sm ${
+-              pathname === href ? "text-[#EAED41]" : "hover:text-[#EAED41]"
+-            }`}
+-          >
+-            {label}
+-          </Link>
+-        ))}
++        <Link href="/destinations" className="text-sm font-medium hover:text-[#EAED41] transition-colors drop-shadow-sm">Destinations</Link>
++        <Link href="/experiences" className="text-sm font-medium hover:text-[#EAED41] transition-colors drop-shadow-sm">Experiences</Link>
++        <Link href="/journal" className="text-sm font-medium hover:text-[#EAED41] transition-colors drop-shadow-sm">Journal</Link>
++        <Link href="/about" className="text-sm font-medium hover:text-[#EAED41] transition-colors drop-shadow-sm">About</Link>
+       </div>
+-
+-      {/* Right side ΓÇö Avatar / Login */}
+       <div className="flex items-center gap-4">
+-        {status === "loading" ? (
+-          <div className="w-9 h-9 rounded-full bg-white/10 animate-pulse" />
+-        ) : session ? (
+-          /* Logged in ΓÇö show avatar linking to profile */
+-          <Link
+-            href="/profile"
+-            className="relative group"
+-            title={`Profile ΓÇö ${username}`}
+-          >
+-            {image ? (
+-              <img
+-                src={image}
+-                alt={username}
+-                className="w-9 h-9 rounded-full object-cover border-2 border-white/20 group-hover:border-[#EAED41]/60 transition-all shadow-lg"
+-              />
+-            ) : (
+-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#D30C5C] to-[#DF33DF] flex items-center justify-center text-white font-headline font-black text-sm shadow-lg border-2 border-white/10 group-hover:border-[#EAED41]/60 transition-all">
+-                {getInitial()}
+-              </div>
+-            )}
+-            {/* Online dot */}
+-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-[#050e1c] shadow" />
+-          </Link>
+-        ) : (
+-          /* Not logged in ΓÇö show login button */
+-          <Link
+-            href="/login"
+-            className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-headline font-semibold transition-all"
+-          >
+-            <span className="material-symbols-outlined text-base">login</span>
+-            Sign In
+-          </Link>
+-        )}
+-
+-        {/* Mobile menu toggle */}
+-        <button
+-          className="material-symbols-outlined hover:text-[#EAED41] transition-colors md:hidden"
+-          onClick={() => setMenuOpen(!menuOpen)}
+-          aria-label="Menu"
+-        >
+-          {menuOpen ? "close" : "menu"}
+-        </button>
++        <button className="material-symbols-outlined hover:text-[#EAED41] transition-colors">account_circle</button>
++        <button className="material-symbols-outlined hover:text-[#EAED41] transition-colors">menu</button>
+       </div>
+-
+-      {/* Mobile Dropdown */}
+-      {menuOpen && (
+-        <div className="absolute top-full mt-3 left-0 right-0 glass-nav rounded-3xl border border-white/10 px-6 py-5 flex flex-col gap-4 shadow-2xl md:hidden">
+-          {navLinks.map(({ href, label }) => (
+-            <Link
+-              key={href}
+-              href={href}
+-              onClick={() => setMenuOpen(false)}
+-              className={`text-sm font-medium transition-colors ${
+-                pathname === href ? "text-[#EAED41]" : "text-white/80 hover:text-[#EAED41]"
+-              }`}
+-            >
+-              {label}
+-            </Link>
+-          ))}
+-          {session ? (
+-            <Link
+-              href="/profile"
+-              onClick={() => setMenuOpen(false)}
+-              className="text-sm font-medium text-white/80 hover:text-[#EAED41] transition-colors flex items-center gap-2"
+-            >
+-              <span className="material-symbols-outlined text-base">manage_accounts</span>
+-              My Profile
+-            </Link>
+-          ) : (
+-            <Link
+-              href="/login"
+-              onClick={() => setMenuOpen(false)}
+-              className="text-sm font-bold text-[#EAED41] flex items-center gap-2"
+-            >
+-              <span className="material-symbols-outlined text-base">login</span>
+-              Sign In
+-            </Link>
+-          )}
+-        </div>
+-      )}
+     </nav>
+   );
+ }
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/Providers.tsx" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/Providers.tsx"
+deleted file mode 100644
+index 0dfb823..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/components/Providers.tsx"	
++++ /dev/null
+@@ -1,7 +0,0 @@
+-"use client";
+-
+-import { SessionProvider } from "next-auth/react";
+-
+-export default function Providers({ children }: { children: React.ReactNode }) {
+-  return <SessionProvider>{children}</SessionProvider>;
+-}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/authOptions.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/authOptions.ts"
+deleted file mode 100644
+index 8a9cd17..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/authOptions.ts"	
++++ /dev/null
+@@ -1,98 +0,0 @@
+-import { NextAuthOptions } from "next-auth";
+-import GoogleProvider from "next-auth/providers/google";
+-import CredentialsProvider from "next-auth/providers/credentials";
+-import { MongoDBAdapter } from "@auth/mongodb-adapter";
+-import clientPromise from "./mongodb-client";
+-import dbConnect from "./mongodb";
+-import User from "@/models/User";
+-import bcrypt from "bcryptjs";
+-
+-export const authOptions: NextAuthOptions = {
+-  // @ts-ignore
+-  adapter: MongoDBAdapter(clientPromise),
+-  providers: [
+-    GoogleProvider({
+-      clientId: process.env.GOOGLE_CLIENT_ID as string,
+-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+-    }),
+-    CredentialsProvider({
+-      name: "Credentials",
+-      credentials: {
+-        email: { label: "Email", type: "email" },
+-        password: { label: "Password", type: "password" }
+-      },
+-      async authorize(credentials) {
+-        if (!credentials?.email || !credentials?.password) {
+-          throw new Error("Missing email or password");
+-        }
+-
+-        await dbConnect();
+-        const user = await User.findOne({ email: credentials.email });
+-
+-        if (!user || !user.password) {
+-          throw new Error("Invalid credentials");
+-        }
+-
+-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+-
+-        if (!isPasswordValid) {
+-          throw new Error("Invalid credentials");
+-        }
+-
+-        return {
+-          id: user._id.toString(),
+-          email: user.email,
+-          name: user.name,
+-          username: user.username,
+-          role: user.role,
+-          image: user.image,
+-        };
+-      }
+-    }),
+-  ],
+-  pages: {
+-    signIn: '/login',
+-  },
+-  session: {
+-    strategy: "jwt", // Using JWT strategy to handle custom fields easily with Credentials
+-  },
+-  callbacks: {
+-    async jwt({ token, user, trigger, session }) {
+-      if (user) {
+-        token.id = user.id;
+-        // @ts-ignore
+-        token.username = user.username;
+-        // @ts-ignore
+-        token.role = user.role || "user";
+-      }
+-      
+-      // Handle session updates (e.g. after setting username)
+-      if (trigger === "update" && session?.username) {
+-        token.username = session.username;
+-      }
+-
+-      // If user came from OAuth, we need to refresh their username/role from DB
+-      if (!token.username) {
+-        await dbConnect();
+-        const dbUser = await User.findOne({ email: token.email });
+-        if (dbUser) {
+-          token.username = dbUser.username;
+-          token.role = dbUser.role;
+-        }
+-      }
+-
+-      return token;
+-    },
+-    async session({ session, token }) {
+-      if (session.user) {
+-        // @ts-ignore
+-        session.user.id = token.id;
+-        // @ts-ignore
+-        session.user.username = token.username;
+-        // @ts-ignore
+-        session.user.role = token.role;
+-      }
+-      return session;
+-    },
+-  },
+-};
+diff --git "a/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/lib/geocode.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/lib/geocode.ts"
+new file mode 100644
+index 0000000..e50c3d9
+--- /dev/null
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/lib/geocode.ts"	
+@@ -0,0 +1,76 @@
++/**
++ * Geocode a place name using the Nominatim (OpenStreetMap) API.
++ * Completely free, no API key required.
++ * Usage policy: https://operations.osmfoundation.org/policies/nominatim/
++ */
++
++export interface GeoPoint {
++  lat: number;
++  lng: number;
++  displayName: string;
++}
++
++export async function geocodePlace(query: string): Promise<GeoPoint | null> {
++  try {
++    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
++      query + ", India"
++    )}&format=json&limit=1`;
++
++    const headers: Record<string, string> = { "Accept-Language": "en" };
++    if (typeof window === "undefined") {
++      headers["User-Agent"] = "TravelFlow/1.0 (college project)";
++    }
++
++    const res = await fetch(url, { headers });
++
++    if (!res.ok) return null;
++    const data = await res.json();
++
++    if (!data || data.length === 0) return null;
++
++    return {
++      lat: parseFloat(data[0].lat),
++      lng: parseFloat(data[0].lon),
++      displayName: data[0].display_name,
++    };
++  } catch {
++    return null;
++  }
++}
++
++/**
++ * Reverse geocode GPS coordinates into a human-readable city name.
++ * Uses Nominatim's /reverse endpoint ΓÇö free, no API key required.
++ * Returns the most meaningful short name (city > town > county > state).
++ */
++export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
++  try {
++    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10`;
++
++    const headers: Record<string, string> = { "Accept-Language": "en" };
++    if (typeof window === "undefined") {
++      headers["User-Agent"] = "TravelFlow/1.0 (college project)";
++    }
++
++    const res = await fetch(url, { headers });
++
++    if (!res.ok) return null;
++    const data = await res.json();
++
++    if (!data || !data.address) return null;
++
++    // Pick the most specific available place name
++    const addr = data.address;
++    return (
++      addr.city ||
++      addr.town ||
++      addr.village ||
++      addr.county ||
++      addr.state_district ||
++      addr.state ||
++      null
++    );
++  } catch {
++    return null;
++  }
++}
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/mongodb-client.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/mongodb-client.ts"
+deleted file mode 100644
+index f1534e7..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/mongodb-client.ts"	
++++ /dev/null
+@@ -1,39 +0,0 @@
+-import { MongoClient, ServerApiVersion } from "mongodb"
+-
+-if (!process.env.MONGODB_URI) {
+-  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"')
+-}
+-
+-const uri = process.env.MONGODB_URI
+-const options = {
+-  serverApi: {
+-    version: ServerApiVersion.v1,
+-    strict: true,
+-    deprecationErrors: true,
+-  },
+-}
+-
+-let client
+-let clientPromise: Promise<MongoClient>
+-
+-if (process.env.NODE_ENV === "development") {
+-  // In development mode, use a global variable so that the value
+-  // is preserved across module reloads caused by HMR (Hot Module Replacement).
+-  let globalWithMongo = global as typeof globalThis & {
+-    _mongoClientPromise?: Promise<MongoClient>
+-  }
+-
+-  if (!globalWithMongo._mongoClientPromise) {
+-    client = new MongoClient(uri, options)
+-    globalWithMongo._mongoClientPromise = client.connect()
+-  }
+-  clientPromise = globalWithMongo._mongoClientPromise
+-} else {
+-  // In production mode, it's best to not use a global variable.
+-  client = new MongoClient(uri, options)
+-  clientPromise = client.connect()
+-}
+-
+-// Export a module-scoped MongoClient promise. By doing this in a
+-// separate module, the client can be shared across functions.
+-export default clientPromise
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/mongodb.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/lib/mongodb.ts"
+index aede4f8..37538e8 100644
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/lib/mongodb.ts"	
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/lib/mongodb.ts"	
+@@ -1,11 +1,6 @@
+ import mongoose from "mongoose";
+ 
+-const MONGODB_URI = process.env.MONGODB_URI!;
+-
+-if (!MONGODB_URI) {
+-  throw new Error("Please define the MONGODB_URI environment variable in .env.local");
+-}
+-
++const MONGODB_URI = process.env.MONGODB_URI;
+ /**
+  * Global is used here to maintain a cached connection across hot reloads
+  * in development. This prevents connections growing exponentially
+@@ -28,6 +23,10 @@ if (!global.mongooseCache) {
+ }
+ 
+ async function dbConnect(): Promise<typeof mongoose> {
++  if (!MONGODB_URI) {
++    throw new Error("Please define the MONGODB_URI environment variable in .env.local");
++  }
++
+   if (cached.conn) {
+     return cached.conn;
+   }
+@@ -36,13 +35,7 @@ async function dbConnect(): Promise<typeof mongoose> {
+     cached.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
+   }
+ 
+-  try {
+-    cached.conn = await cached.promise;
+-  } catch (e) {
+-    cached.promise = null;
+-    throw e;
+-  }
+-  
++  cached.conn = await cached.promise;
+   return cached.conn;
+ }
+ 
+diff --git "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/models/User.ts" "b/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/models/User.ts"
+deleted file mode 100644
+index 8f1bb70..0000000
+--- "a/c:\\Users\\Abhinav Gusain\\OneDrive\\Documents\\vscode\\TravelApp\\src/models/User.ts"	
++++ /dev/null
+@@ -1,16 +0,0 @@
+-import mongoose from "mongoose";
+-
+-const userSchema = new mongoose.Schema({
+-  name: { type: String },
+-  email: { type: String, unique: true, required: true },
+-  password: { type: String }, // Optional for Google users
+-  username: { type: String, unique: true, sparse: true }, // Sparse allows null for OAuth users initially
+-  image: { type: String },
+-  emailVerified: { type: Date, default: null },
+-  role: { type: String, default: "user" },
+-}, { timestamps: true });
+-
+-// Check if model already exists to prevent overwrite in development
+-const User = mongoose.models.User || mongoose.model("User", userSchema);
+-
+-export default User;
+diff --git "a/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/scripts/seed.ts" "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/scripts/seed.ts"
+new file mode 100644
+index 0000000..7f417d7
+--- /dev/null
++++ "b/C:\\Users\\Abhinav Gusain\\Downloads\\Travel\\TravelFlow\\src/scripts/seed.ts"	
+@@ -0,0 +1,55 @@
++import mongoose from "mongoose";
++import { DESTINATIONS } from "../lib/data";
++
++const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/travelflow";
++
++const LocationSchema = new mongoose.Schema({
++  title: String,
++  subtitle: String,
++  description: String,
++  bgImage: String,
++  cardImage: String,
++  gradient: String,
++  accentColor: String,
++  coordinates: String,
++  state: String,
++  category: String,
++  rating: Number,
++  reviews: Number,
++  priceLabel: String,
++  mustSee: [String],
++  bestTime: String,
++  idealDays: String,
++});
++
++const Location = mongoose.models.Location || mongoose.model("Location", LocationSchema);
++
++async function seedDatabase() {
++  try {
++    console.log("Connecting to MongoDB at", MONGODB_URI);
++    await mongoose.connect(MONGODB_URI);
++    
++    console.log("Connected to database. Emptying existing Locations collection...");
++    await Location.deleteMany({});
++    
++    console.log("Seeding with the following data:");
++    console.log(DESTINATIONS.map(l => l.title));
++    
++    for (const loc of DESTINATIONS) {
++      // Create valid DB objects omitting the original ID
++      const { id, ...data } = loc;
++      const doc = new Location(data);
++      await doc.save();
++    }
++    
++    console.log(`Successfully seeded ${DESTINATIONS.length} locations!`);
++  } catch (error) {
++    console.error("Error seeding database:", error);
++  } finally {
++    console.log("Closing connection...");
++    await mongoose.connection.close();
++    process.exit(0);
++  }
++}
++
++seedDatabase();

@@ -20,18 +20,22 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
 - **Itinerary Command Center (`/plan`):** A context-aware itinerary planner where users can seamlessly switch between:
   - 🕒 Timeline views
   - 🏨 Available hotel stays
-  - 🚌 Transport & vehicle options
+  - 🚌 Transport & vehicle options (with **Interactive Seat & Cabin Selection** and dynamic budget tracking)
   - 🙋 Local tour guides
-- **Interactive Route Map:** Live tracking visualizations overlaid on darkened geography.
+- **Interactive Route Map:** Live tracking visualizations using **Leaflet** overlaid on darkened geography.
+- **User Authentication & Profiles:** Secure login via Google OAuth or Email/Password (using NextAuth). Users can manage their upcoming trips, view past itineraries, and cancel bookings within a 48-hour window.
+- **Smart Routing Engine:** Intelligent multi-modal routing (Flight, Train, Bus, Road) powered by free OSM APIs (Overpass, Photon, OSRM).
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Framework** | [Next.js 16 (App Router)](https://nextjs.org/) |
+| **Auth** | [NextAuth.js (v4)](https://next-auth.js.org/) |
 | **Library** | [React 19](https://react.dev/) |
 | **Styling** | [Tailwind CSS 4](https://tailwindcss.com/) |
 | **Database** | [MongoDB Atlas](https://www.mongodb.com/atlas) + [Mongoose](https://mongoosejs.com/) |
+| **Maps & Routing** | [Leaflet](https://leafletjs.com/), Overpass, Photon, OSRM |
 | **Typography** | Google Fonts (Plus Jakarta Sans, Inter, JetBrains Mono) |
 | **Icons** | Google Material Symbols Outlined |
 | **Language** | TypeScript |
@@ -52,7 +56,17 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
    - Go to **Network Access** and allow your IP address (or `0.0.0.0/0` for universal access).
    - Click **Connect** on your cluster, choose **Connect your application**, and copy the connection string. Replace `<password>` with the password you created.
 
-2. **SerpAPI (`SERPAPI_KEY`)**:
+2. **Google OAuth (Optional, for Google Login)**:
+   - Go to the [Google Cloud Console](https://console.cloud.google.com/).
+   - Create a new project and configure the OAuth consent screen.
+   - Create OAuth 2.0 Client IDs.
+   - Set Authorized redirect URIs to `http://localhost:3000/api/auth/callback/google`.
+   - Copy the Client ID (`GOOGLE_CLIENT_ID`) and Client Secret (`GOOGLE_CLIENT_SECRET`).
+
+3. **NextAuth Secret (`NEXTAUTH_SECRET`)**:
+   - Generate a random string (e.g., using `openssl rand -base64 32`) to secure your sessions.
+
+4. **SerpAPI (`SERPAPI_KEY`)**:
    - Head over to [SerpAPI](https://serpapi.com/) and register for a free account.
    - Once logged in, navigate to your **Dashboard**.
    - Copy your private API Key from the "Your Private API Key" section.
@@ -80,6 +94,10 @@ TravelFlow is an interactive, cinematic web application that redefines travel pl
    ```env
    MONGODB_URI=your_mongodb_connection_string
    SERPAPI_KEY=your_serpapi_private_key
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_generated_secret
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
    ```
 
    > **Note for Collaborators:** You can either use your own local/Atlas database (recommended) or ask the project owner for access to the shared development database.

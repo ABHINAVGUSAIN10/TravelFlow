@@ -1,6 +1,12 @@
 import { PLAN_GUIDES } from "@/lib/data";
 
-export default function GuidesTab() {
+interface Props {
+  destination?: string;
+  onBookItem?: (price: number) => void;
+  onGuideSelect?: (guideName: string, price?: string) => void;
+}
+
+export default function GuidesTab({ destination = "Destination", onBookItem, onGuideSelect }: Props) {
   return (
     <div className="fade-in flex flex-col gap-6">
       <h2 className="text-2xl font-headline font-bold border-b border-white/10 pb-4 flex items-center gap-3">
@@ -25,7 +31,18 @@ export default function GuidesTab() {
                     <span className="font-technical text-sm font-bold">{g.rating}</span>
                 </div>
                 <p className="font-headline font-bold text-lg mb-2">{g.price}</p>
-                <button className="border border-white/20 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-white/10 transition">Hire Guide</button>
+                <button 
+                  onClick={() => {
+                    if (onBookItem) {
+                      const priceNum = parseInt(g.price.replace(/[^0-9]/g, ''));
+                      onBookItem(priceNum);
+                    }
+                    if (onGuideSelect) onGuideSelect(g.name, g.price);
+                  }}
+                  className="border border-white/20 text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-white/10 transition"
+                >
+                  Hire Guide
+                </button>
             </div>
         </div>
       ))}

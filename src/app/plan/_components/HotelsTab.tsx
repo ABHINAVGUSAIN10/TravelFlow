@@ -6,6 +6,7 @@ import HotelDetailView from "./HotelDetailView";
 interface HotelsTabProps {
   destination: string;
   onBookItem?: (price: number) => void;
+  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
 }
 
 interface Hotel {
@@ -23,7 +24,7 @@ interface Hotel {
   badge: string;
 }
 
-export default function HotelsTab({ destination, onBookItem }: HotelsTabProps) {
+export default function HotelsTab({ destination, onBookItem, onHotelSelect }: HotelsTabProps) {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,6 +76,7 @@ export default function HotelsTab({ destination, onBookItem }: HotelsTabProps) {
         hotelName={selectedHotel.name}
         onBack={() => setSelectedHotel(null)}
         onBookItem={onBookItem}
+        onHotelSelect={onHotelSelect}
       />
     );
   }

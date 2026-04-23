@@ -1,7 +1,7 @@
 "use client";
 
 import Navigation from "@/components/Navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -41,7 +41,7 @@ const VIBE_MAP: Record<string, string[]> = {
   Adventure: ["Mountains", "Deserts", "Forests"],
 };
 
-export default function Destinations() {
+function DestinationsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const vibeParam = searchParams.get("vibe");
@@ -331,6 +331,20 @@ export default function Destinations() {
         )}
       </main>
     </>
+  );
+}
+
+export default function Destinations() {
+  return (
+    <Suspense 
+      fallback={
+        <div className="bg-[#050e1c] min-h-screen flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-white/10 border-t-[#EAED41] rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <DestinationsContent />
+    </Suspense>
   );
 }
 

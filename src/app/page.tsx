@@ -107,10 +107,13 @@ export default function Home() {
   const searchSectionRef = useRef<HTMLDivElement>(null);
 
   // Search bar state
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [selectedSource, setSelectedSource] = useState<{ _id: string; title: string } | null>(null);
   const [destinationQuery, setDestinationQuery] = useState("");
   const [selectedDestination, setSelectedDestination] = useState<{ _id: string; title: string } | null>(null);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [travelersCount, setTravelersCount] = useState(2);
   const [selectedVibe, setSelectedVibe] = useState("Nature");
 
   // Block user scroll when expanded
@@ -354,12 +357,21 @@ export default function Home() {
                       isSearchExpanded ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none absolute'
                   }`}
                >
-                   <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-4 px-6 py-4 md:py-0 gap-6 md:gap-4 whitespace-nowrap">
+                   <div className="flex-1 w-full grid grid-cols-2 md:grid-cols-5 px-6 py-4 md:py-0 gap-6 md:gap-4 whitespace-nowrap">
                       <DestinationAutocomplete
-                        value={destinationQuery}
-                        onChange={setDestinationQuery}
-                        onSelect={(s) => setSelectedDestination(s ? { _id: s._id, title: s.title } : null)}
+                        label="Source"
+                        placeholder="Current Location?"
+                        value={sourceQuery}
+                        onChange={setSourceQuery}
+                        onSelect={(s) => setSelectedSource(s ? { _id: s._id, title: s.title } : null)}
                       />
+                      <div className="md:border-l md:border-white/10 md:pl-6">
+                        <DestinationAutocomplete
+                          value={destinationQuery}
+                          onChange={setDestinationQuery}
+                          onSelect={(s) => setSelectedDestination(s ? { _id: s._id, title: s.title } : null)}
+                        />
+                      </div>
                       <CalendarPicker
                         startDate={startDate}
                         endDate={endDate}
@@ -367,10 +379,10 @@ export default function Home() {
                       />
                       <div className="flex flex-col md:border-l md:border-white/10 md:pl-6 pt-4 md:pt-0 border-t border-white/10 md:border-t-0 col-span-2 md:col-span-1">
                         <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">Travelers</span>
-                        <select defaultValue="2 Guests" className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none mt-1 appearance-none cursor-pointer">
-                          <option className="bg-[#050e1c]">1 Guest</option>
-                          <option className="bg-[#050e1c]">2 Guests</option>
-                          <option className="bg-[#050e1c]">3+ Guests</option>
+                        <select value={travelersCount} onChange={(e) => setTravelersCount(parseInt(e.target.value))} className="bg-transparent border-none text-white font-headline font-semibold text-sm focus:outline-none mt-1 appearance-none cursor-pointer">
+                          <option value={1} className="bg-[#050e1c]">1 Guest</option>
+                          <option value={2} className="bg-[#050e1c]">2 Guests</option>
+                          <option value={3} className="bg-[#050e1c]">3+ Guests</option>
                         </select>
                       </div>
                       <div className="flex flex-col md:border-l md:border-white/10 md:pl-6 pt-4 md:pt-0 border-t border-white/10 md:border-t-0 col-span-2 md:col-span-1">
@@ -398,11 +410,18 @@ export default function Home() {
                        </button>
                         <button 
                            onClick={() => {
-                             if (selectedDestination) {
-                               router.push(`/plan?dest=${encodeURIComponent(selectedDestination.title)}&tab=hotels`);
-                             } else {
-                               router.push(`/plan?vibe=${encodeURIComponent(selectedVibe)}&tab=hotels`);
+                             const sourceName = selectedSource?.title || sourceQuery || "New Delhi";
+                             const destName = selectedDestination?.title || destinationQuery || "Manali";
+                             
+                             let queryUrl = `/plan?source=${encodeURIComponent(sourceName)}&tab=hotels`;
+                             if (destName) queryUrl += `&dest=${encodeURIComponent(destName)}`;
+                             else queryUrl += `&vibe=${encodeURIComponent(selectedVibe)}`;
+
+                             if (startDate && endDate) {
+                               queryUrl += `&start=${startDate.toISOString()}&end=${endDate.toISOString()}&travelers=${travelersCount}`;
                              }
+                             
+                             router.push(queryUrl);
                            }}
                            className="flex-1 md:flex-none h-12 bg-gradient-to-r from-[#D30C5C] to-[#DF33DF] text-white font-bold px-8 justify-center rounded-full text-sm hover:opacity-90 transition-opacity shadow-lg flex items-center gap-2 cursor-pointer"
                         >

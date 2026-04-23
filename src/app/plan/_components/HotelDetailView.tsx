@@ -9,9 +9,10 @@ interface HotelDetailViewProps {
   hotelName: string;
   onBack: () => void;
   onBookItem?: (price: number) => void;
+  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
 }
 
-export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem }: HotelDetailViewProps) {
+export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem, onHotelSelect }: HotelDetailViewProps) {
   const [hotel, setHotel] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showPropertyModal, setShowPropertyModal] = useState(false);
@@ -285,7 +286,7 @@ export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem
         <h3 className="text-2xl font-headline font-bold text-white mb-6">Choose your room</h3>
         <div className="flex flex-col gap-6">
           {(hotel.rooms && hotel.rooms.length > 0 ? hotel.rooms : generateFallbackRooms()).map((room: any, i: number) => (
-            <RoomCard key={room.id || i} room={room} index={i} onBookItem={onBookItem} />
+            <RoomCard key={room.id || i} room={room} index={i} hotelName={hotel.name} hotelAddress={hotel.address} onBookItem={onBookItem} onHotelSelect={onHotelSelect} />
           ))}
         </div>
       </div>
@@ -310,7 +311,14 @@ export default function HotelDetailView({ hotelId, hotelName, onBack, onBookItem
 }
 
 /* ======================== ROOM CARD ======================== */
-function RoomCard({ room, index, onBookItem }: { room: any; index: number; onBookItem?: (price: number) => void }) {
+function RoomCard({ room, index, hotelName, hotelAddress, onBookItem, onHotelSelect }: {
+  room: any;
+  index: number;
+  hotelName?: string;
+  hotelAddress?: string;
+  onBookItem?: (price: number) => void;
+  onHotelSelect?: (hotel: { name: string; address?: string; price?: string; roomType?: string }) => void;
+}) {
   const [selectedExtra, setSelectedExtra] = useState(0);
   const [isReserved, setIsReserved] = useState(false);
 
@@ -445,6 +453,12 @@ function RoomCard({ room, index, onBookItem }: { room: any; index: number; onBoo
             onClick={() => {
               setIsReserved(true);
               if (onBookItem) onBookItem(currentPriceRaw);
+              if (onHotelSelect) onHotelSelect({
+                name: hotelName || room.name,
+                address: hotelAddress,
+                price: currentPriceFormatted,
+                roomType: room.name,
+              });
             }}
             className="w-full bg-[#3B6FE8] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#2d5bc9] transition-colors shadow-lg shadow-[#3B6FE8]/20"
           >

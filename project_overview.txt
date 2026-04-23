@@ -1,0 +1,29 @@
+# TravelFlow - Project Overview
+## About The Project
+TravelFlow is a comprehensive, modern travel planning application designed to provide users with a cinematic, seamless experience for discovering destinations, building itineraries, and booking accommodations. It features a sophisticated dual-theme (light/dark) design system tailored for visual excellence and optimal user interaction.
+## Key Features
+- **Destination Discovery:** Explore curated travel locations with comprehensive descriptions, seasonal packing essentials, fun facts, and best-time-to-visit recommendations.
+- **Dynamic Itineraries:** Generate and manage detailed travel plans.
+- **Hotel Integration:** Integrated with Hotels.com Provider API for authentic, real-time hotel data and search capabilities.
+- **Advanced Search:** Features a robust destination autocomplete and custom calendar date picker with date constraints.
+- **User Authentication:** Secure signup/login system with profile management. Users can update their profiles, track past/current itineraries, and securely delete their accounts.
+- **Live Map & Routing:** Features real-time route display and live location tracking powered by WebSockets.
+- **Modern UI/UX:** Stunning interface with responsive design, glassmorphism aesthetics, semantic CSS variables for theme management, and smooth micro-animations.
+## Technology Stack
+The application is built on a robust, modern JavaScript/TypeScript ecosystem aimed at high performance, scalability, and maintainability.
+### Frontend
+- **Framework:** Next.js (Version 16.1.6) utilizing the App Router architecture for server-side rendering, API routes, and optimized routing.
+- **Library:** React (Version 19.2.3)
+- **Styling:** Tailwind CSS v4, utilizing a highly customized semantic variable system for easy theming (Dark/Light mode).
+- **Language:** TypeScript 5 for static type safety and enhanced developer experience.
+### Backend & Database
+- **Database:** MongoDB (using the official MongoDB Node.js driver v7.1.1).
+- **ODM / Modeling:** Mongoose (v9.3.0) for structured document schemas and data validation.
+- **Data Seeding:** Custom TSX scripts (`seed.ts`, `enrich.ts`) for populating initial database records seamlessly.
+### Authentication & Security
+- **Auth Provider:** NextAuth.js (v4) paired with `@auth/mongodb-adapter` for secure session management stored directly in the database.
+- **Encryption:** `bcryptjs` for secure password hashing and verification.
+- **Environment Management:** Local environment variables (`.env.local`) to securely store database URIs and external API keys.
+### External APIs
+- **SerpApi:** Used for fast and reliable integration with search engine results, fetching real-world data and images.
+- **Hotels.com API:** Powers the dynamic hotel search functionality, offering real-world lodging data to users.

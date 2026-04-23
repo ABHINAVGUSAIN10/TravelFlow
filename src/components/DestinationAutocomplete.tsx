@@ -16,9 +16,11 @@ interface Props {
   value: string;
   onChange: (value: string) => void;
   onSelect: (suggestion: Suggestion) => void;
+  label?: string;
+  placeholder?: string;
 }
 
-export default function DestinationAutocomplete({ value, onChange, onSelect }: Props) {
+export default function DestinationAutocomplete({ value, onChange, onSelect, label = "Destination", placeholder = "Where to?" }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -86,11 +88,11 @@ export default function DestinationAutocomplete({ value, onChange, onSelect }: P
   return (
     <div ref={containerRef} className="relative flex flex-col">
       <span className="text-[10px] font-technical uppercase text-[#B4D104] tracking-widest">
-        Destination
+        {label}
       </span>
       <input
         type="text"
-        placeholder="Where to?"
+        placeholder={placeholder}
         value={value}
         onChange={(e) => {
           onChange(e.target.value);
